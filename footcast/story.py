@@ -63,7 +63,8 @@ STATUS_FA = {
 
 # کلمات کلیدی برای تخمین وضعیت از متن خبر
 _OFFICIAL_MARKERS = ["رسما", "رسماً", "رسمی شد", "official", "confirmed", "announce"]
-_RUMOR_MARKERS = ["شایعه", "احتمال", "گمانه", "rumour", "rumor", "reportedly", "linked"]
+_RUMOR_MARKERS = ["شایعه", "گمانه", "rumour", "rumor", "reportedly", "linked"]
+_TALKS_MARKERS = ["مذاکره", "در آستانه", "نزدیک به توافق", "گفت‌وگو", "احتمال جذب", "احتمال انتقال"]
 _DENIED_MARKERS = ["تکذیب", "رد کرد", "denied", "denies"]
 _QUOTE_MARKERS = ["گفت:", "اظهار", "مصاحبه", "said:", "told"]
 
@@ -186,9 +187,13 @@ def infer_status(text: str, tier: str) -> str:
         return DIRECT_QUOTE
     if _contains_any(text, _RUMOR_MARKERS):
         return RUMOR
+    if _contains_any(text, _TALKS_MARKERS):
+        return ADVANCED_TALKS
     if tier == TIER_1_OFFICIAL:
         return OFFICIAL
-    if tier in (TIER_2_RELIABLE,):
+    # خبر عادی از خبرگزاری/خبرنگار «گزارش‌شده» است، نه شایعه.
+    # فقط منابع تجمیع‌کننده (Tier 4) به‌طور پیش‌فرض شایعه محسوب می‌شوند.
+    if tier in (TIER_2_RELIABLE, TIER_3_JOURNALIST):
         return REPORTED_AGREEMENT
     return RUMOR
 

@@ -39,6 +39,17 @@ def test_infer_status_rumor_and_denied():
     assert infer_status("باشگاه خبر را تکذیب کرد", TIER_1_OFFICIAL) == "DENIED"
 
 
+def test_regular_news_is_reported_not_rumor():
+    # خبر عادی از خبرگزاری/خبرنگار نباید پیش‌فرض «شایعه» شود
+    assert infer_status("استقلال منتظر رأی کمیته انضباطی است", TIER_2_RELIABLE) == "REPORTED_AGREEMENT"
+    assert infer_status("باشگاه بازیکن را در فهرست گذاشت", "TIER_3_JOURNALIST") == "REPORTED_AGREEMENT"
+
+
+def test_transfer_talks_detected():
+    assert infer_status("بارسلونا در آستانه جذب هافبک", TIER_2_RELIABLE) == "ADVANCED_TALKS"
+    assert infer_status("مذاکره برای انتقال بازیکن", TIER_2_RELIABLE) == "ADVANCED_TALKS"
+
+
 def test_infer_status_official_requires_tier1():
     assert infer_status("باشگاه رسما اعلام کرد", TIER_1_OFFICIAL) == OFFICIAL
     # همان متن با Tier پایین‌تر رسمی محسوب نمی‌شود
