@@ -86,7 +86,8 @@ class Config:
 
     @property
     def elevenlabs_voice_id(self) -> str:
-        return os.getenv("ELEVENLABS_VOICE_ID", "21m00Tcm4TlvDq8ikWAM")
+        # صدای پیش‌فرض برنامه (قابل بازنویسی با ELEVENLABS_VOICE_ID در .env)
+        return os.getenv("ELEVENLABS_VOICE_ID", "pqHfZKP75CvOlQylNhV4")
 
     @property
     def elevenlabs_model_id(self) -> str:
