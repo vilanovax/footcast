@@ -42,21 +42,35 @@ class PronunciationDictionary:
         self.entries = sorted(entries, key=lambda e: len(e.original), reverse=True)
 
     @classmethod
-    def load(cls, path: str | Path = DEFAULT_PRONUNCIATION_PATH) -> "PronunciationDictionary":
+    def load(
+        cls,
+        path: str | Path = DEFAULT_PRONUNCIATION_PATH,
+        include_glossary: bool = True,
+    ) -> "PronunciationDictionary":
         path = Path(path)
-        if not path.exists():
-            return cls([])
-        raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
-        entries = [
-            PronunciationEntry(
-                original=e["original"],
-                display_fa=e.get("display_fa", e["original"]),
-                tts_fa=e.get("tts_fa", e.get("display_fa", e["original"])),
-                entity=e.get("entity", "TERM"),
-                verified=bool(e.get("verified", False)),
-            )
-            for e in raw.get("entries", [])
-        ]
+        entries: list[PronunciationEntry] = []
+        if path.exists():
+            raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+            entries = [
+                PronunciationEntry(
+                    original=e["original"],
+                    display_fa=e.get("display_fa", e["original"]),
+                    tts_fa=e.get("tts_fa", e.get("display_fa", e["original"])),
+                    entity=e.get("entity", "TERM"),
+                    verified=bool(e.get("verified", False)),
+                )
+                for e in raw.get("entries", [])
+            ]
+
+        # اصطلاحات فوتبالی و تلفظ آن‌ها (فرهنگ واژگان)
+        if include_glossary:
+            try:
+                from .glossary import load_glossary
+
+                entries.extend(load_glossary().pronunciation_entries())
+            except Exception:  # noqa: BLE001 - نبود فرهنگ نباید مانع شود
+                pass
+
         return cls(entries)
 
     def apply(self, text: str) -> PronunciationResult:

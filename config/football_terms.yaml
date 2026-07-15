@@ -1,0 +1,142 @@
+# ---------------------------------------------------------------------------
+# فرهنگ واژگان ثابت فوتبال (تحریریه + TTS)
+# ---------------------------------------------------------------------------
+# سه دسته:
+#   keep       : اصطلاحات جاافتاده که حفظ می‌شوند + شکل تلفظ TTS (§۱، §۷)
+#   translate  : شکل مصنوعی/انگلیسی که باید به فارسی طبیعی تبدیل شود (§۳)
+#   explain    : اصطلاحاتی که در اولین اشاره بهتر است کوتاه توضیح داده شوند (§۲)
+#
+# display : شکلی که در متن تحریریه/شونوت ظاهر می‌شود
+# tts     : شکلی که به TTS داده می‌شود تا درست تلفظ شود (اگر با display فرق کند)
+# aliases : شکل‌های دیگری که ممکن است در متن بیایند (برای جایگزینی/تلفظ)
+
+keep:
+  - display: "کام‌بک"
+    tts: "کام‌بَک"
+    aliases: ["کامبک", "Comeback"]
+  - display: "کات‌بک"
+    tts: "کَت‌بَک"
+    aliases: ["کاتبک", "Cut-back", "Cutback"]
+  - display: "کرنر"
+    tts: "کُرنِر"
+    aliases: ["Corner"]
+  - display: "پنالتی"
+    tts: "پِنالتی"
+    aliases: ["Penalty"]
+  - display: "آفساید"
+    tts: "آفساید"
+    aliases: ["Offside"]
+  - display: "هت‌تریک"
+    tts: "هَت‌تریک"
+    aliases: ["هتریک", "Hat-trick", "Hattrick"]
+  - display: "کلین‌شیت"
+    tts: "کِلین شیت"
+    aliases: ["کلینشیت", "Clean sheet", "Clean-sheet"]
+  - display: "پرسینگ"
+    tts: "پِرِسینگ"
+    aliases: ["Pressing"]
+  - display: "پرس"
+    tts: "پِرِس"
+    aliases: ["Press"]
+  - display: "ضدپرس"
+    tts: "ضدپِرِس"
+    aliases: ["ضد پرس", "Counter-press", "Counterpress"]
+  - display: "بیلدآپ"
+    tts: "بیلد آپ"
+    aliases: ["بیلد آپ", "Build-up", "Buildup"]
+  - display: "اوورلپ"
+    tts: "اُوِرلَپ"
+    aliases: ["اورلپ", "Overlap"]
+  - display: "آندرلپ"
+    tts: "آندِرلَپ"
+    aliases: ["Underlap"]
+  - display: "ترنزیشن"
+    tts: "تِرَنزیشِن"
+    aliases: ["Transition"]
+  - display: "لو بلاک"
+    tts: "لو بِلاک"
+    aliases: ["لوبلاک", "Low block", "Low-block"]
+  - display: "مید بلاک"
+    tts: "مید بِلاک"
+    aliases: ["میدبلاک", "Mid-block", "Mid block"]
+  - display: "های‌پرس"
+    tts: "های پِرِس"
+    aliases: ["هایپرس", "High press", "High-press"]
+  - display: "های‌لاین"
+    tts: "های لاین"
+    aliases: ["هایلاین", "High line", "High-line"]
+  - display: "ست‌پیس"
+    tts: "سِت پیس"
+    aliases: ["ستپیس", "Set piece", "Set-piece"]
+  - display: "پلی‌میکر"
+    tts: "پِلِی مِیکِر"
+    aliases: ["پلیمیکر", "Playmaker"]
+  - display: "فالس ناین"
+    tts: "فالس ناین"
+    aliases: ["فالسناین", "False nine", "False-nine"]
+  - display: "باکس‌تو‌باکس"
+    tts: "باکس تو باکس"
+    aliases: ["باکس تو باکس", "Box-to-box", "Box to box"]
+  - display: "هاف‌اسپیس"
+    tts: "هَف اِسپِیس"
+    aliases: ["هافاسپیس", "هاف اسپیس", "Half-space", "Half space"]
+  - display: "فول‌بک"
+    tts: "فول بَک"
+    aliases: ["فولبک", "Full-back", "Fullback"]
+  - display: "وینگ‌بک"
+    tts: "وینگ بَک"
+    aliases: ["وینگبک", "Wing-back", "Wingback"]
+  - display: "وینگر"
+    tts: "وینگِر"
+    aliases: ["Winger"]
+  - display: "سوپر ساب"
+    tts: "سوپر ساب"
+    aliases: ["سوپرساب", "Super-sub", "Super sub"]
+  - display: "دربی"
+    tts: "دِربی"
+    aliases: ["Derby"]
+  - display: "پلی‌آف"
+    tts: "پِلِی آف"
+    aliases: ["پلیاف", "Play-off", "Playoff"]
+  - display: "فینال فور"
+    tts: "فینال فور"
+    aliases: ["Final Four", "Final-Four"]
+  - display: "وی‌ای‌آر"
+    tts: "وی اِی آر"
+    aliases: ["VAR", "V.A.R", "وی ای آر"]
+
+translate:
+  # شکل مصنوعی/انگلیسی → فارسی طبیعی (§۳)
+  "کانتر اتک": "ضدحمله"
+  "کانتراتک": "ضدحمله"
+  "کانتر حمله": "ضدحمله"
+  "کانتر": "ضدحمله"
+  "کراس": "سانتر"
+  "هدر": "ضربه سر"
+  "فورمیشن": "آرایش تیم"
+  "فری ایجنت": "بازیکن آزاد"
+  "بای‌آوت": "بند فسخ"
+  "بایاوت": "بند فسخ"
+  "سل‌آن کلاز": "سهم فروش بعدی"
+  "ترو بال": "پاس عمقی"
+  "پوزیشن": "جای‌گیری"
+  "کپیتان": "کاپیتان"
+
+explain:
+  # در اولین اشاره کوتاه توضیح داده شوند (راهنما برای مدل و تحریریه) (§۲)
+  - term: "کات‌بک"
+    hint: "پاس کات‌بک؛ یعنی پاس به عقب از کنار خط عرضی"
+  - term: "لو بلاک"
+    hint: "دفاع فشرده یا لو بلاک"
+  - term: "های‌لاین"
+    hint: "خط دفاعی بالا یا های‌لاین"
+  - term: "ترنزیشن"
+    hint: "انتقال سریع از دفاع به حمله یا ترنزیشن"
+  - term: "بیلدآپ"
+    hint: "بازی‌سازی از عقب یا بیلدآپ"
+  - term: "هاف‌اسپیس"
+    hint: "فضای بین کناره و مرکز زمین، یا هاف‌اسپیس"
+  - term: "فالس ناین"
+    hint: "مهاجم کاذب یا فالس ناین"
+  - term: "ایکس‌جی"
+    hint: "امید گل یا ایکس‌جی"

@@ -13,6 +13,7 @@ from .audio import assemble
 from .branding import apply_branding
 from .config import Config, load_config
 from .generate import generate_script
+from .glossary import load_glossary
 from .persian_date import now_tehran
 from .ingest import fetch_all
 from .models import ReviewResult, Script
@@ -98,6 +99,14 @@ def build_draft(config: Config, out_dir: Path | None = None) -> dict:
     # اعمال امضای ثابت برنامه (شروع و پایان یکسان؛ فقط تاریخ و تیترها متغیر)
     when = now_tehran()
     apply_branding(final_script, used_stories, when, config.content)
+
+    # نرمال‌سازی واژگان فوتبالی (شکل مصنوعی → فارسی طبیعی) در همه بخش‌ها
+    glossary = load_glossary()
+    final_script.intro = glossary.normalize(final_script.intro)
+    final_script.outro = glossary.normalize(final_script.outro)
+    for seg in final_script.segments:
+        seg.headline = glossary.normalize(seg.headline)
+        seg.body = glossary.normalize(seg.body)
 
     print("\n[۵/۵] تولید متن پاک TTS (اعداد به حروف، حذف لاتین/مارک‌داون، تلفظ) ...")
     pron = PronunciationDictionary.load()
