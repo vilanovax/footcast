@@ -66,6 +66,16 @@ class Config:
         return os.getenv("ELEVENLABS_MODEL_ID", "eleven_multilingual_v2")
 
     @property
+    def tts_provider(self) -> str:
+        # پیش‌فرض: اگر کلید ElevenLabs باشد از آن، وگرنه mock
+        default = "elevenlabs" if self.elevenlabs_api_key else "mock"
+        return os.getenv("TTS_PROVIDER", default)
+
+    @property
+    def asr_provider(self) -> str:
+        return os.getenv("ASR_PROVIDER", "mock")
+
+    @property
     def enabled_sources(self) -> list[Source]:
         return [s for s in self.sources if s.enabled]
 

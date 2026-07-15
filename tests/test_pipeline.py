@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 from footcast.config import ContentConfig, SelectionConfig, Config, Source
 from footcast.models import NewsItem, Script, Segment
 from footcast.select import select_top, score_items
-from footcast.tts import _chunk_text
+from footcast.segments import build_segments
 from footcast.review import _basic_checks
 
 
@@ -58,11 +58,14 @@ def test_select_top_drops_stale_items():
     assert "کهنه" not in titles
 
 
-def test_chunk_text_splits_long_text():
+def test_build_segments_splits_long_text():
     text = "\n\n".join(["پاراگراف " * 100 for _ in range(20)])
-    chunks = _chunk_text(text, max_chars=1000)
-    assert len(chunks) > 1
-    assert all(len(c) <= 1000 for c in chunks)
+    segments = build_segments(text, max_chars=1000)
+    assert len(segments) > 1
+    assert all(len(s.text) <= 1000 for s in segments)
+    # شناسه‌ها قطعی و یکتا هستند
+    keys = [s.segment_key for s in segments]
+    assert len(keys) == len(set(keys))
 
 
 def test_script_to_speech_text_orders_parts():

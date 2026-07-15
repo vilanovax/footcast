@@ -13,10 +13,11 @@ from .generate import generate_script
 from .ingest import fetch_all
 from .models import ReviewResult, Script
 from .pronunciation import PronunciationDictionary
+from .providers import get_tts_provider
 from .review import review_script
 from .select import select_top
-from .tts import synthesize
 from .tts_clean import clean_for_tts
+from .tts_job import concat_segments, synthesize_segments
 
 
 def _stamp() -> str:
@@ -154,7 +155,7 @@ def synthesize_draft(
     out_path: str | Path | None = None,
     require_approval: bool = True,
 ) -> Path:
-    """از روی پیش‌نویس تأییدشده فایل صوتی می‌سازد (با متن پاک TTS).
+    """از روی پیش‌نویس تأییدشده، صوت را سگمنت‌محور و ایدمپوتنت می‌سازد.
 
     طبق قانون سند، بدون تأیید معتبر متن، تولید صوت مجاز نیست.
     """
@@ -164,9 +165,31 @@ def synthesize_draft(
         if not ok:
             raise RuntimeError(f"تولید صوت مجاز نیست: {reason}")
 
-    script, tts_text = load_draft(json_path)
+    _script, tts_text = load_draft(json_path)
     out_path = Path(out_path) if out_path else json_path.with_suffix(".mp3")
-    return synthesize(script, config, out_path, text=tts_text)
+
+    provider = get_tts_provider(config)
+    episode_id = json_path.stem
+    settings = {"stability": 0.5, "similarity_boost": 0.75}
+
+    print(f"  → تولید صوت با Provider «{provider.name}» (سگمنت‌محور، ایدمپوتنت) ...")
+    result = synthesize_segments(
+        provider=provider,
+        text=tts_text,
+        out_dir=json_path.parent,
+        episode_id=episode_id,
+        approved_text_sha256=_sha256(tts_text),
+        voice_id=config.elevenlabs_voice_id,
+        model_id=config.elevenlabs_model_id,
+        settings=settings,
+    )
+    print(f"     {result['generated']} بخش تولید شد، {result['skipped']} بخش از قبل موجود بود.")
+
+    audio_path = concat_segments(result["manifest"], out_path)
+    # فایل مرجع متن کنار صوت برای QA/ASR
+    out_path.with_suffix(".tts.txt").write_text(tts_text, encoding="utf-8")
+    print(f"  ✅ فایل صوتی: {audio_path}")
+    return audio_path
 
 
 def run_full(config: Config) -> dict:
