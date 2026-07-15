@@ -24,6 +24,7 @@ from .story import build_stories, select_for_episode
 from .providers import get_asr_provider, get_tts_provider
 from .review import review_script
 from .select import select_top
+from .ssml import build_ssml
 from .tts_clean import clean_for_tts
 from .tts_job import concat_segments, synthesize_segments
 
@@ -36,7 +37,15 @@ def _sha256(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
-def _script_to_markdown(script: Script, review: ReviewResult | None = None) -> str:
+def _script_to_markdown(
+    script: Script,
+    review: ReviewResult | None = None,
+    pron: "PronunciationDictionary | None" = None,
+) -> str:
+    # نسخه تحریریه: نام‌های خارجی با شکل انگلیسی همراه می‌شوند (§۱، §۱۵)
+    def ann(text: str) -> str:
+        return pron.annotate(text, style="editorial") if pron else text
+
     lines = [f"# {script.show_name}", f"تاریخ: {script.date}", ""]
     if review is not None:
         status = "✅ تأیید شد" if review.approved else "⚠️ نیازمند بازبینی دستی"
@@ -54,13 +63,13 @@ def _script_to_markdown(script: Script, review: ReviewResult | None = None) -> s
             lines.append("")
         if review.notes:
             lines += [f"**یادداشت ویراستار:** {review.notes}", ""]
-    lines += ["## مقدمه", script.intro, ""]
+    lines += ["## مقدمه", ann(script.intro), ""]
     for idx, seg in enumerate(script.segments, 1):
-        lines += [f"## {idx}. {seg.headline}", seg.body]
+        lines += [f"## {idx}. {ann(seg.headline)}", ann(seg.body)]
         if seg.source:
             lines.append(f"> منبع: {seg.source} — {seg.link}")
         lines.append("")
-    lines += ["## جمع‌بندی", script.outro, ""]
+    lines += ["## جمع‌بندی", ann(script.outro), ""]
     return "\n".join(lines)
 
 
@@ -126,8 +135,11 @@ def build_draft(config: Config, out_dir: Path | None = None) -> dict:
     json_path = base.with_suffix(".json")
     md_path = base.with_suffix(".md")
     tts_path = base.with_suffix(".tts.txt")
+    ssml_path = base.with_suffix(".ssml")
 
+    # نسخه TTS (بدون انگلیسی، تلفظ‌شده) و نسخه SSML (با مکث)
     tts_path.write_text(clean.text, encoding="utf-8")
+    ssml_path.write_text(build_ssml(final_script, pron), encoding="utf-8")
 
     # اتصال متن اجرا به Storyها (نسخه گفتاری هر خبر) برای هماهنگی سه خروجی
     for story, seg in zip(used_stories, final_script.segments):
@@ -137,7 +149,7 @@ def build_draft(config: Config, out_dir: Path | None = None) -> dict:
     notes_path = base.with_suffix(".show-notes.md")
     qa_path = base.with_suffix(".qa-report.json")
     notes_path.write_text(
-        build_show_notes(stories, config.content.show_name, final_script.date),
+        build_show_notes(stories, config.content.show_name, final_script.date, pron),
         encoding="utf-8",
     )
     qa = build_qa_report(stories, final_script.to_speech_text(), clean.issues)
@@ -164,12 +176,14 @@ def build_draft(config: Config, out_dir: Path | None = None) -> dict:
         ),
         encoding="utf-8",
     )
-    md_path.write_text(_script_to_markdown(final_script, review), encoding="utf-8")
+    md_path.write_text(_script_to_markdown(final_script, review, pron), encoding="utf-8")
 
     print("\n" + "=" * 60)
     print(f"  پیش‌نویس آماده شد.")
-    print(f"  متن (Markdown): {md_path}")
-    print(f"  شونوت/منابع:    {notes_path}")
+    print(f"  تحریریه (MD):   {md_path}")
+    print(f"  متن TTS:        {tts_path}")
+    print(f"  SSML:           {ssml_path}")
+    print(f"  شونوت/انتشار:   {notes_path}")
     print(f"  کنترل کیفیت:    {qa_path}")
     print(f"  داده (JSON):    {json_path}")
     status = "تأیید خودکار شد ✅" if review.approved else "نیازمند بازبینی دستی ⚠️"
@@ -188,6 +202,7 @@ def build_draft(config: Config, out_dir: Path | None = None) -> dict:
         "notes_path": notes_path,
         "qa_path": qa_path,
         "tts_path": tts_path,
+        "ssml_path": ssml_path,
         "tts_text": clean.text,
         "audio_path": base.with_suffix(".mp3"),
         "script": final_script,

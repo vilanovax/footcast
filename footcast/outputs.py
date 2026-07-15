@@ -27,8 +27,14 @@ WORDS_PER_MINUTE = 140
 # ---------------------------------------------------------------------------
 # خروجی دوم: شونوت و منابع (§۱۸)
 # ---------------------------------------------------------------------------
-def build_show_notes(stories: list[Story], show_name: str, date: str) -> str:
-    """جدول شونوت با منابع، وضعیت، زمان‌ها و درجه اطمینان برای هر خبر."""
+def build_show_notes(stories: list[Story], show_name: str, date: str, pron=None) -> str:
+    """جدول شونوت با منابع، وضعیت، زمان‌ها و درجه اطمینان برای هر خبر.
+
+    نسخه انتشار: نام‌های خارجی به شکل «فارسی — English» نمایش داده می‌شوند (§۱۵).
+    """
+    def ann(text: str) -> str:
+        return pron.annotate(text, style="publish") if pron else text
+
     lines = [f"# شونوت — {show_name}", f"تاریخ: {date}", ""]
 
     used = [s for s in stories if s.used_in_episode]
@@ -50,7 +56,7 @@ def build_show_notes(stories: list[Story], show_name: str, date: str) -> str:
             secondary_list = []
         secondary = "، ".join(x.name for x in secondary_list) or "-"
         lines.append(
-            f"| {s.title[:50]} | {STATUS_FA.get(s.status, s.status)} | {primary} "
+            f"| {ann(s.title[:50])} | {STATUS_FA.get(s.status, s.status)} | {primary} "
             f"| {secondary} | {s.credibility}/5 | {s.section} |"
         )
     lines.append("")

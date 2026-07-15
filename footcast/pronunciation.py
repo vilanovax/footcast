@@ -27,6 +27,7 @@ class PronunciationEntry:
     tts_fa: str
     entity: str = "TERM"
     verified: bool = False
+    language: str = ""
 
 
 @dataclass
@@ -58,6 +59,7 @@ class PronunciationDictionary:
                     tts_fa=e.get("tts_fa", e.get("display_fa", e["original"])),
                     entity=e.get("entity", "TERM"),
                     verified=bool(e.get("verified", False)),
+                    language=e.get("language", ""),
                 )
                 for e in raw.get("entries", [])
             ]
@@ -79,8 +81,10 @@ class PronunciationDictionary:
         unverified: list[str] = []
 
         for entry in self.entries:
-            if entry.original in text:
-                text = text.replace(entry.original, entry.tts_fa)
+            # جایگزینی با مرز واژه تا «پرس» داخل «پرسپولیس» مطابقت نکند
+            pattern = re.compile(rf"(?<!\w){re.escape(entry.original)}(?!\w)")
+            if pattern.search(text):
+                text = pattern.sub(lambda _m, r=entry.tts_fa: r, text)
                 if not entry.verified:
                     unverified.append(entry.original)
 
@@ -94,3 +98,33 @@ class PronunciationDictionary:
         warnings = list(dict.fromkeys(warnings))
         unverified = list(dict.fromkeys(unverified))
         return PronunciationResult(text=text, warnings=warnings, unverified=unverified)
+
+    # --- سه نسخه‌ی نام (§۱، §۱۵) ---
+    def _name_entries(self) -> list[PronunciationEntry]:
+        """فقط نام‌های واقعی (نه اصطلاحات) که شکل اصلی لاتین دارند."""
+        return [
+            e for e in self.entries
+            if e.entity != "TERM" and _LATIN_TOKEN.search(e.original)
+        ]
+
+    def annotate(self, text: str, style: str = "editorial") -> str:
+        """نام فارسیِ شناخته‌شده را در «اولین اشاره» با شکل انگلیسی همراه می‌کند.
+
+        style="editorial" → «میکل مرینو (Mikel Merino)»
+        style="publish"   → «میکل مرینو — Mikel Merino»
+        (نسخه TTS از این استفاده نمی‌کند و باید بدون انگلیسی بماند.)
+        """
+        sep = " ({orig})" if style == "editorial" else " — {orig}"
+        seen: set[str] = set()
+        # بلندترین نام‌ها اول تا نام کامل پیش از بخشی از آن جایگزین شود
+        for entry in sorted(self._name_entries(), key=lambda e: len(e.display_fa), reverse=True):
+            fa = entry.display_fa
+            if fa in seen:
+                continue
+            pattern = re.compile(rf"(?<!\w){re.escape(fa)}(?!\w)")
+            if not pattern.search(text):
+                continue
+            annotated = fa + sep.format(orig=entry.original)
+            text = pattern.sub(lambda _m, r=annotated: r, text, count=1)  # فقط اولین اشاره
+            seen.add(fa)
+        return text

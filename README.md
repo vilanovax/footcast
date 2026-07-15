@@ -86,9 +86,11 @@ python -m footcast check-approval output/footcast-YYYYMMDD-HHMM.json
 
 هر اجرا این فایل‌ها را در `output/` می‌سازد:
 
-- `footcast-<تاریخ>.md` — متن قابل‌خواندن به همراه گزارش بازبینی سه‌پاس
+- `footcast-<تاریخ>.md` — نسخه تحریریه: متن + نام‌ها به شکل «فارسی (English)» + گزارش بازبینی
+- `footcast-<تاریخ>.tts.txt` — نسخه TTS: فقط فارسیِ قابل‌تلفظ، بدون انگلیسی
+- `footcast-<تاریخ>.ssml` — نسخه SSML با مکث‌های `<break>` بین بخش‌ها
+- `footcast-<تاریخ>.show-notes.md` — نسخه انتشار: نام‌ها به شکل «فارسی — English»
 - `footcast-<تاریخ>.json` — داده ساختاریافته + متن پاک TTS و هش آن
-- `footcast-<تاریخ>.tts.txt` — متن پاک آماده گفتار
 - `footcast-<تاریخ>.text-approval.json` — سند تأیید متن (با هش)
 - `footcast-<تاریخ>.mp3` — فایل صوتی نهایی
 - `footcast-<تاریخ>.audio-approval.json` — سند تأیید صوت (با هش)

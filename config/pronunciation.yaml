@@ -6,15 +6,86 @@
 #   display_fa : شکل نمایشی فارسی (برای شونوت/متن)
 #   tts_fa     : شکلی که به TTS داده می‌شود تا درست تلفظ شود (با اعراب)
 #   entity     : PLAYER | COACH | TEAM | STADIUM | CITY | TOURNAMENT | ORGANIZATION | TERM
+#   language   : (اختیاری) زبان مبدأ نام: es | fr | en | de | it | ...
 #   verified   : آیا تلفظ توسط انسان تأیید شده؟
 #
+# سه نسخه از هر نام:
+#   تحریریه : display_fa (original)         → برای بررسی انسانی
+#   TTS     : tts_fa                        → فقط فارسیِ قابل‌تلفظ، بدون انگلیسی
+#   انتشار  : display_fa — original          → برای شونوت و شبکه‌های اجتماعی
 # نکته: نام مهمِ «تأییدنشده» پیش از تولید صوت نهایی باید هشدار (یا بلاکر) بدهد.
 
 entries:
+  # --- بازیکنان ---
   - original: "Mbappé"
     display_fa: "کیلیان امباپه"
     tts_fa: "کیلیان اِمباپِه"
     entity: PLAYER
+    language: fr
+    verified: true
+
+  - original: "Mikel Merino"
+    display_fa: "میکل مرینو"
+    tts_fa: "میکل مِرینو"
+    entity: PLAYER
+    language: es
+    verified: true
+
+  - original: "Michael Olise"
+    display_fa: "مایکل اولیسه"
+    tts_fa: "مایکل اُلیسِه"
+    entity: PLAYER
+    language: fr
+    verified: true
+
+  - original: "Ousmane Dembélé"
+    display_fa: "عثمان دمبله"
+    tts_fa: "عثمان دِمبِله"
+    entity: PLAYER
+    language: fr
+    verified: true
+
+  - original: "Didier Deschamps"
+    display_fa: "دیدیه دشان"
+    tts_fa: "دیدیه دِشان"
+    entity: COACH
+    language: fr
+    verified: true
+
+  # --- ورزشگاه‌ها و سازمان‌ها ---
+  - original: "AT&T Stadium"
+    display_fa: "ورزشگاه ای‌تی‌اندتی"
+    tts_fa: "ورزشگاه اِی‌تی اَند تی"
+    entity: STADIUM
+    language: en
+    verified: true
+
+  - original: "CAS"
+    display_fa: "دادگاه حکمیت ورزش"
+    tts_fa: "دادگاه حکمیت ورزش"
+    entity: ORGANIZATION
+    language: en
+    verified: true
+
+  - original: "PSG"
+    display_fa: "پاری‌سن‌ژرمن"
+    tts_fa: "پاری سن ژِرمن"
+    entity: TEAM
+    language: fr
+    verified: true
+
+  - original: "Paris Saint-Germain"
+    display_fa: "پاری‌سن‌ژرمن"
+    tts_fa: "پاری سن ژِرمن"
+    entity: TEAM
+    language: fr
+    verified: true
+
+  - original: "Eintracht Frankfurt"
+    display_fa: "آینتراخت فرانکفورت"
+    tts_fa: "آینتراخت فِرانکفورت"
+    entity: TEAM
+    language: de
     verified: true
 
   - original: "Mbappe"

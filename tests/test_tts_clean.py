@@ -47,6 +47,17 @@ def test_pronunciation_flags_unknown_latin():
     assert "Foobar" in res.warnings
 
 
+def test_pronunciation_respects_word_boundary():
+    # «پرس» نباید داخل «پرسپولیس» مطابقت کند (رگرسیون)
+    d = PronunciationDictionary([
+        PronunciationEntry("پرس", "پرس", "پِرِس", "TERM", True),
+    ])
+    res = d.apply("پرسپولیس در بازی پرس کرد")
+    assert "پرسپولیس" in res.text          # دست‌نخورده
+    assert "پِرِسپولیس" not in res.text
+    assert "پِرِس کرد" in res.text          # واژه مستقل تبدیل شد
+
+
 # --- متن پاک TTS ---
 def test_clean_strips_markdown_and_url():
     out = clean_for_tts("**مهم** ببینید [اینجا](https://x.com) و https://y.com")
