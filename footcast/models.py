@@ -59,12 +59,25 @@ class Script(BaseModel):
         return "\n\n".join(p.strip() for p in parts if p.strip())
 
 
+class PassResult(BaseModel):
+    """نتیجه یک پاس از بازبینی سه‌مرحله‌ای."""
+
+    pass_number: int
+    name: str
+    approved: bool = False
+    score: int = 0  # 0..100
+    issues: list[str] = Field(default_factory=list)
+    facts_changed: bool = False
+    notes: str = ""
+
+
 class ReviewResult(BaseModel):
-    """نتیجه مرحله بازبینی کیفی محتوا."""
+    """نتیجه مرحله بازبینی کیفی محتوا (تجمیع سه پاس)."""
 
     approved: bool
     score: int = 0  # 0..100
     issues: list[str] = Field(default_factory=list)
     notes: str = ""
+    passes: list[PassResult] = Field(default_factory=list)
     # نسخه اصلاح‌شده اسکریپت (در صورت وجود اصلاحات)
     revised_script: Optional[Script] = None

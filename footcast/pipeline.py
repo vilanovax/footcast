@@ -31,6 +31,13 @@ def _script_to_markdown(script: Script, review: ReviewResult | None = None) -> s
     if review is not None:
         status = "✅ تأیید شد" if review.approved else "⚠️ نیازمند بازبینی دستی"
         lines += [f"**وضعیت بازبینی:** {status} (امتیاز: {review.score}/100)", ""]
+        if review.passes:
+            lines.append("**بازبینی سه‌مرحله‌ای:**")
+            for p in review.passes:
+                mark = "✅" if p.approved else "⚠️"
+                lines.append(f"- {mark} Pass {p.pass_number} ({p.name}) — {p.score}/100"
+                             + (f" — {len(p.issues)} ایراد" if p.issues else ""))
+            lines.append("")
         if review.issues:
             lines.append("**ایرادها:**")
             lines += [f"- {i}" for i in review.issues]
