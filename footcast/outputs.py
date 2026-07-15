@@ -11,7 +11,14 @@ from __future__ import annotations
 
 import re
 
+from .colloquial import find_over_colloquial
 from .story import STATUS_FA, Story
+
+# نشانه‌های زبان رسمی که در متن محاوره‌ای نباید بمانند
+_FORMAL_RESIDUE = [
+    "خواهد شد", "خواهد کرد", "می‌باشد", "اظهار داشت", "در خصوص",
+    "به منظور", "مورد تأیید قرار", "به شمار می‌رود", "می‌شود", "هستند",
+]
 
 # محدوده کلمه بر دقیقه اجرای فارسی (§۲۰)
 WORDS_PER_MINUTE = 140
@@ -99,6 +106,10 @@ def build_qa_report(
     # واژه‌های انگلیسی ناخواسته در متن اجرا
     latin = sorted(set(re.findall(r"[A-Za-z]{2,}", spoken_text)))
 
+    # کنترل محاوره معیار (§۱۹): شکل رسمیِ باقی‌مانده و عامیانه افراطی
+    formal_residue = [m for m in _FORMAL_RESIDUE if m in spoken_text]
+    over_colloquial = find_over_colloquial(spoken_text)
+
     checks = {
         "storyCount": len(used),
         "unsourcedClaims": unsourced,
@@ -110,6 +121,8 @@ def build_qa_report(
         "targetMinutes": target_minutes,
         "lengthDeltaPercent": length_delta_pct,
         "unwantedEnglishTokens": latin,
+        "formalResidue": formal_residue,
+        "overColloquial": over_colloquial,
         "ttsIssues": tts_issues,
     }
 
@@ -123,6 +136,8 @@ def build_qa_report(
         blockers.append(f"واژه انگلیسی ناخواسته در متن اجرا: {', '.join(latin[:5])}")
     if length_delta_pct > 20:
         blockers.append(f"طول متن {length_delta_pct}% با هدف فاصله دارد.")
+    if over_colloquial:
+        blockers.append(f"لحن بیش‌ازحد عامیانه: {'، '.join(over_colloquial[:5])}")
 
     checks["blockers"] = blockers
     checks["readyToPublish"] = len(blockers) == 0

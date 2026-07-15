@@ -11,6 +11,7 @@ from .approval import check_text_approval
 from .asr_diff import diff_asr
 from .audio import assemble
 from .branding import apply_branding
+from .colloquial import to_colloquial
 from .config import Config, load_config
 from .generate import generate_script
 from .glossary import load_glossary
@@ -100,13 +101,17 @@ def build_draft(config: Config, out_dir: Path | None = None) -> dict:
     when = now_tehran()
     apply_branding(final_script, used_stories, when, config.content)
 
-    # نرمال‌سازی واژگان فوتبالی (شکل مصنوعی → فارسی طبیعی) در همه بخش‌ها
+    # نرمال‌سازی واژگان فوتبالی (شکل مصنوعی → فارسی طبیعی) + بازنویسی محاوره معیار
     glossary = load_glossary()
-    final_script.intro = glossary.normalize(final_script.intro)
-    final_script.outro = glossary.normalize(final_script.outro)
+
+    def _polish(text: str) -> str:
+        return to_colloquial(glossary.normalize(text))
+
+    final_script.intro = _polish(final_script.intro)
+    final_script.outro = _polish(final_script.outro)
     for seg in final_script.segments:
-        seg.headline = glossary.normalize(seg.headline)
-        seg.body = glossary.normalize(seg.body)
+        seg.headline = _polish(seg.headline)
+        seg.body = _polish(seg.body)
 
     print("\n[۵/۵] تولید متن پاک TTS (اعداد به حروف، حذف لاتین/مارک‌داون، تلفظ) ...")
     pron = PronunciationDictionary.load()
