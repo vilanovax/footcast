@@ -23,6 +23,8 @@ class Source:
     region: str = "world"
     weight: int = 5
     enabled: bool = True
+    tier: str = ""            # اختیاری: TIER_1_OFFICIAL .. TIER_4_AGGREGATOR
+    is_official: bool = False  # منبع رسمی (باشگاه/فدراسیون/لیگ)
 
 
 @dataclass
@@ -107,6 +109,8 @@ def load_config(path: str | Path = DEFAULT_CONFIG_PATH) -> Config:
             region=s.get("region", "world"),
             weight=int(s.get("weight", 5)),
             enabled=bool(s.get("enabled", True)),
+            tier=s.get("tier", ""),
+            is_official=bool(s.get("is_official", False)),
         )
         for s in raw.get("sources", [])
     ]

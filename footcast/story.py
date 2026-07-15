@@ -187,10 +187,18 @@ def compute_final_score(story: Story) -> float:
     )
 
 
-def story_from_news(item: NewsItem, index: int, is_official: bool = False) -> Story:
+_VALID_TIERS = {TIER_1_OFFICIAL, TIER_2_RELIABLE, TIER_3_JOURNALIST, TIER_4_AGGREGATOR}
+
+
+def story_from_news(item: NewsItem, index: int, is_official: bool | None = None) -> Story:
     """یک Story از یک NewsItem می‌سازد."""
     now = datetime.now(tz=timezone.utc).isoformat()
-    tier = tier_from_weight(item.source_weight, is_official)
+    official = item.is_official if is_official is None else is_official
+    # Tier صریح از کانفیگ در اولویت است؛ وگرنه از وزن تخمین زده می‌شود
+    if item.source_tier in _VALID_TIERS:
+        tier = item.source_tier
+    else:
+        tier = tier_from_weight(item.source_weight, official)
     text = f"{item.title} {item.summary}"
     status = infer_status(text, tier)
 

@@ -7,6 +7,11 @@
 #   region  : iran | europe | world  (برای دسته‌بندی و امتیازدهی)
 #   weight  : وزن اهمیت منبع (۱ تا ۱۰) — منابع معتبرتر وزن بالاتر
 #   enabled : فعال/غیرفعال بودن منبع
+#   tier    : (اختیاری) TIER_1_OFFICIAL | TIER_2_RELIABLE | TIER_3_JOURNALIST | TIER_4_AGGREGATOR
+#   is_official: (اختیاری) true برای منابع رسمی (سایت باشگاه، فدراسیون، لیگ)
+#
+# نکته: فقط منابع رسمی (is_official) می‌توانند یک خبر را «رسمی» کنند.
+# فیدهای رسمی باشگاه‌ها/فدراسیون را با is_official: true اضافه کن.
 
 sources:
   # --- ایران ---

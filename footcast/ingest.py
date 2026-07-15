@@ -65,6 +65,8 @@ def fetch_source(source: Source, timeout: int = 20) -> list[NewsItem]:
                 region=source.region,
                 published=_parse_date(entry),
                 source_weight=source.weight,
+                source_tier=source.tier,
+                is_official=source.is_official,
             )
         )
     return items

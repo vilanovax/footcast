@@ -18,6 +18,8 @@ class NewsItem(BaseModel):
     region: str = "world"  # iran | europe | world
     published: Optional[datetime] = None
     source_weight: int = 5
+    source_tier: str = ""
+    is_official: bool = False
 
     # امتیاز اهمیت که در مرحله انتخاب محاسبه می‌شود
     score: float = 0.0
