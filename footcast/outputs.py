@@ -12,7 +12,7 @@ from __future__ import annotations
 import re
 
 from .colloquial import find_over_colloquial
-from .story import STATUS_FA, Story
+from .story import RUMOR_RADAR, SECTION_FA, STATUS_FA, Story
 
 # نشانه‌های زبان رسمی که در متن محاوره‌ای نباید بمانند
 _FORMAL_RESIDUE = [
@@ -55,9 +55,13 @@ def build_show_notes(stories: list[Story], show_name: str, date: str, pron=None)
             primary = "-"
             secondary_list = []
         secondary = "، ".join(x.name for x in secondary_list) or "-"
+        section_fa = SECTION_FA.get(s.section, s.section)
+        # دماسنج شایعات: درجه ۱ تا ۵ فقط برای بخش شایعات
+        if s.section == RUMOR_RADAR:
+            section_fa += f" (دما {s.heat}/5)"
         lines.append(
             f"| {ann(s.title[:50])} | {STATUS_FA.get(s.status, s.status)} | {primary} "
-            f"| {secondary} | {s.credibility}/5 | {s.section} |"
+            f"| {secondary} | {s.credibility}/5 | {section_fa} |"
         )
     lines.append("")
 

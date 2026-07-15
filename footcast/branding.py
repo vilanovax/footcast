@@ -77,6 +77,11 @@ def build_outro(question: str, content: ContentConfig) -> str:
 
 
 def apply_branding(script, stories, when: datetime, content: ContentConfig) -> None:
-    """intro/outro اسکریپت را با امضای ثابت برنامه جایگزین می‌کند (درجا)."""
-    script.intro = build_intro(stories, when, content)
+    """intro/outro اسکریپت را با امضای ثابت برنامه جایگزین می‌کند (درجا).
+
+    اگر «قلاب سرد» وجود داشته باشد، پیش از امضای ثابت شروع می‌آید (§۱).
+    """
+    intro = build_intro(stories, when, content)
+    hook = (getattr(script, "cold_hook", "") or "").strip()
+    script.intro = f"{hook} {intro}" if hook else intro
     script.outro = build_outro(getattr(script, "question", "") or "", content)

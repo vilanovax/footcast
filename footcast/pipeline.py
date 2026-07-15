@@ -95,9 +95,10 @@ def build_draft(config: Config, out_dir: Path | None = None) -> dict:
     stories = build_stories(top)
     stories = select_for_episode(stories)
     used_stories = [s for s in stories if s.used_in_episode]
+    _sec = lambda name: sum(1 for s in used_stories if s.section == name)  # noqa: E731
     print(f"     {len(stories)} رویداد یکتا، {len(used_stories)} در اپیزود "
-          f"({sum(1 for s in used_stories if s.section == 'MAIN_STORY')} اصلی، "
-          f"{sum(1 for s in used_stories if s.section == 'RUMOR_RADAR')} شایعه).")
+          f"({_sec('MAIN_STORY')} اصلی، {_sec('IRAN_FOOTBALL')} ایران، "
+          f"{_sec('WORLD_ROUNDUP')} جهان، {_sec('RUMOR_RADAR')} شایعه).")
 
     print("\n[۳/۴] تولید محتوای نوشتاری ...")
     script = generate_script(top, config)

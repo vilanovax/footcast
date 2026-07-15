@@ -67,13 +67,43 @@ _RUMOR_MARKERS = ["شایعه", "احتمال", "گمانه", "rumour", "rumor",
 _DENIED_MARKERS = ["تکذیب", "رد کرد", "denied", "denies"]
 _QUOTE_MARKERS = ["گفت:", "اظهار", "مصاحبه", "said:", "told"]
 
-# بخش‌های اپیزود (§۹)
-MAIN_STORY = "MAIN_STORY"
-KEY_NEWS = "KEY_NEWS"
-RUMOR_RADAR = "RUMOR_RADAR"
+# بخش‌های اپیزود (§۹ و ساختار فرمت)
+MAIN_STORY = "MAIN_STORY"           # داستان اصلی روز
+IRAN_FOOTBALL = "IRAN_FOOTBALL"     # رادار فوتبال ایران
+WORLD_ROUNDUP = "WORLD_ROUNDUP"     # جهان در سه پاس
+RUMOR_RADAR = "RUMOR_RADAR"         # دماسنج شایعات
+KEY_NEWS = "KEY_NEWS"               # عمومی (پشتیبان)
 STAT = "STAT"
 CALENDAR = "CALENDAR"
 UNUSED = "UNUSED"
+
+SECTION_FA = {
+    MAIN_STORY: "داستان اصلی",
+    IRAN_FOOTBALL: "رادار فوتبال ایران",
+    WORLD_ROUNDUP: "جهان در سه پاس",
+    RUMOR_RADAR: "دماسنج شایعات",
+    KEY_NEWS: "خبرهای مهم",
+    STAT: "یک عدد، یک معنی",
+    CALENDAR: "امشب چی ببینیم",
+    UNUSED: "استفاده‌نشده",
+}
+
+# دماسنج شایعات: وضعیت → درجه ۱ تا ۵ (§۷)
+HEAT_BY_STATUS = {
+    RUMOR: 1,             # فقط شایعه
+    CONFLICTING: 2,       # گزارش‌های متناقض
+    ADVANCED_TALKS: 2,    # مذاکره شروع شده
+    OFFICIAL_BID: 3,      # پیشنهاد رسمی
+    REPORTED_AGREEMENT: 4,  # توافق گزارش‌شده
+    DIRECT_QUOTE: 3,
+    OFFICIAL: 5,          # منتظر/اعلام رسمی
+    DENIED: 1,
+    UNDER_REVIEW: 2,
+}
+
+
+def heat_for(status: str) -> int:
+    return HEAT_BY_STATUS.get(status, 2)
 
 
 class StorySource(BaseModel):
@@ -120,6 +150,7 @@ class Story(BaseModel):
     duplicate_of: Optional[str] = None
     used_in_episode: bool = False
     section: str = UNUSED
+    heat: int = 2  # دماسنج شایعات ۱ تا ۵ (§۷)
     drop_reason: str = ""
 
     summary: str = ""
@@ -221,6 +252,7 @@ def story_from_news(item: NewsItem, index: int, is_official: bool | None = None)
     story.audience_relevance = 4 if item.region == "iran" else 3
     story.freshness = 5 if item.published else 3
     story.narrative_value = 3
+    story.heat = heat_for(status)
     story.final_score = compute_final_score(story)
     return story
 
@@ -287,37 +319,53 @@ _RUMOR_STATUSES = {RUMOR, ADVANCED_TALKS, OFFICIAL_BID, CONFLICTING}
 
 def select_for_episode(
     stories: list[Story],
-    max_key_news: int = 4,
+    max_iran: int = 3,
+    max_world: int = 3,
     max_rumors: int = 2,
     min_credibility_main: int = 3,
 ) -> list[Story]:
     """به Storyها بخش (section) اختصاص می‌دهد و used_in_episode را تعیین می‌کند.
 
-    قواعد §۸ و §۹: اعتبار کمتر از ۳ وارد بخش اصلی نمی‌شود؛ فقط شایعه مهم در
-    «رادار شایعات» با معرفی صریح مجاز است.
+    ساختار فرمت: داستان اصلی + رادار فوتبال ایران + جهان در سه پاس + دماسنج شایعات.
+    قواعد §۸: اعتبار کمتر از ۳ وارد بخش‌های اصلی نمی‌شود؛ فقط شایعه مهم در
+    «دماسنج شایعات» با درجه مشخص مجاز است.
     """
     ordered = sorted(stories, key=lambda s: s.final_score, reverse=True)
 
-    main_pool = [s for s in ordered if s.credibility >= min_credibility_main
-                 and s.status not in _RUMOR_STATUSES]
+    # دماسنج شایعات به‌روز شود (پس از ادغام‌ها)
+    for s in ordered:
+        s.heat = heat_for(s.status)
+
+    solid = [s for s in ordered if s.credibility >= min_credibility_main
+             and s.status not in _RUMOR_STATUSES]
     rumor_pool = [s for s in ordered if s.status in _RUMOR_STATUSES]
 
     used_ids: set[str] = set()
 
-    # داستان اصلی
-    if main_pool:
-        top = main_pool[0]
+    # داستان اصلی: قوی‌ترین خبر معتبر روز
+    if solid:
+        top = solid[0]
         top.section = MAIN_STORY
         top.used_in_episode = True
         used_ids.add(top.id)
 
-    # محورهای مهم
-    for s in main_pool[1 : 1 + max_key_news]:
-        s.section = KEY_NEWS
-        s.used_in_episode = True
-        used_ids.add(s.id)
+    # تقسیم بقیه‌ی خبرهای معتبر بین «ایران» و «جهان»
+    iran_count = world_count = 0
+    for s in solid[1:]:
+        if s.id in used_ids:
+            continue
+        if s.region == "iran" and iran_count < max_iran:
+            s.section = IRAN_FOOTBALL
+            s.used_in_episode = True
+            used_ids.add(s.id)
+            iran_count += 1
+        elif s.region in ("europe", "world") and world_count < max_world:
+            s.section = WORLD_ROUNDUP
+            s.used_in_episode = True
+            used_ids.add(s.id)
+            world_count += 1
 
-    # رادار شایعات (فقط شایعه‌های مهم)
+    # دماسنج شایعات (فقط شایعه‌های مهم، حداکثر دو)
     for s in rumor_pool[:max_rumors]:
         if s.id in used_ids:
             continue

@@ -43,6 +43,7 @@ class Script(BaseModel):
 
     show_name: str
     date: str
+    cold_hook: str = ""  # قلاب سرد پیش از امضا (§۱)
     intro: str = ""
     segments: list[Segment] = Field(default_factory=list)
     outro: str = ""
