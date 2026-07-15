@@ -14,7 +14,9 @@ from .config import Config, load_config
 from .generate import generate_script
 from .ingest import fetch_all
 from .models import ReviewResult, Script
+from .outputs import build_qa_report, build_show_notes
 from .pronunciation import PronunciationDictionary
+from .story import build_stories, select_for_episode
 from .providers import get_asr_provider, get_tts_provider
 from .review import review_script
 from .select import select_top
@@ -76,6 +78,14 @@ def build_draft(config: Config, out_dir: Path | None = None) -> dict:
     if not top:
         raise RuntimeError("هیچ خبری برای تولید محتوا یافت نشد.")
 
+    print("\n[۲.۵] ساخت لایه Story (ادغام تکراری، Tier، وضعیت، امتیاز §۸) ...")
+    stories = build_stories(top)
+    stories = select_for_episode(stories)
+    used_stories = [s for s in stories if s.used_in_episode]
+    print(f"     {len(stories)} رویداد یکتا، {len(used_stories)} در اپیزود "
+          f"({sum(1 for s in used_stories if s.section == 'MAIN_STORY')} اصلی، "
+          f"{sum(1 for s in used_stories if s.section == 'RUMOR_RADAR')} شایعه).")
+
     print("\n[۳/۴] تولید محتوای نوشتاری ...")
     script = generate_script(top, config)
 
@@ -99,11 +109,26 @@ def build_draft(config: Config, out_dir: Path | None = None) -> dict:
 
     tts_path.write_text(clean.text, encoding="utf-8")
 
+    # اتصال متن اجرا به Storyها (نسخه گفتاری هر خبر) برای هماهنگی سه خروجی
+    for story, seg in zip(used_stories, final_script.segments):
+        story.spoken_version = seg.body
+
+    # خروجی دوم و سوم: شونوت و کنترل کیفیت (§۱۸)
+    notes_path = base.with_suffix(".show-notes.md")
+    qa_path = base.with_suffix(".qa-report.json")
+    notes_path.write_text(
+        build_show_notes(stories, config.content.show_name, final_script.date),
+        encoding="utf-8",
+    )
+    qa = build_qa_report(stories, final_script.to_speech_text(), clean.issues)
+    qa_path.write_text(json.dumps(qa, ensure_ascii=False, indent=2), encoding="utf-8")
+
     json_path.write_text(
         json.dumps(
             {
                 "script": final_script.model_dump(),
                 "review": review.model_dump(exclude={"revised_script"}),
+                "stories": [s.model_dump() for s in stories],
                 "tts_clean": {
                     "text": clean.text,
                     "sha256": _sha256(clean.text),
@@ -112,6 +137,7 @@ def build_draft(config: Config, out_dir: Path | None = None) -> dict:
                     "unverified_names": clean.unverified_names,
                     "path": str(tts_path),
                 },
+                "qa_report": qa,
             },
             ensure_ascii=False,
             indent=2,
@@ -123,9 +149,13 @@ def build_draft(config: Config, out_dir: Path | None = None) -> dict:
     print("\n" + "=" * 60)
     print(f"  پیش‌نویس آماده شد.")
     print(f"  متن (Markdown): {md_path}")
+    print(f"  شونوت/منابع:    {notes_path}")
+    print(f"  کنترل کیفیت:    {qa_path}")
     print(f"  داده (JSON):    {json_path}")
     status = "تأیید خودکار شد ✅" if review.approved else "نیازمند بازبینی دستی ⚠️"
     print(f"  وضعیت بازبینی: {status} — امتیاز {review.score}/100")
+    print(f"  طول متن: {qa['wordCount']} کلمه (~{qa['estimatedMinutes']} دقیقه) | "
+          f"آماده انتشار: {'بله' if qa['readyToPublish'] else 'خیر'}")
     if review.issues:
         print("  ایرادها:")
         for i in review.issues:
@@ -135,11 +165,15 @@ def build_draft(config: Config, out_dir: Path | None = None) -> dict:
     return {
         "json_path": json_path,
         "md_path": md_path,
+        "notes_path": notes_path,
+        "qa_path": qa_path,
         "tts_path": tts_path,
         "tts_text": clean.text,
         "audio_path": base.with_suffix(".mp3"),
         "script": final_script,
         "review": review,
+        "stories": stories,
+        "qa_report": qa,
     }
 
 
