@@ -111,7 +111,7 @@ def _run_llm_pass(client, model: str, pass_number: int, name: str, script: Scrip
     message = client.messages.create(
         model=model, max_tokens=4000, messages=[{"role": "user", "content": prompt}]
     )
-    data = _extract_json(message.content[0].text)
+    data = _extract_json(_message_text(message))
     if data is None:
         return (
             PassResult(pass_number=pass_number, name=name, approved=False,
@@ -228,6 +228,18 @@ def review_script(script: Script, config: Config) -> ReviewResult:
         passes=passes,
         revised_script=current,
     )
+
+
+def _message_text(message) -> str:
+    """اولین بلوک متنی پاسخ را امن استخراج می‌کند."""
+    try:
+        for block in message.content:
+            text = getattr(block, "text", None)
+            if text:
+                return text
+    except (AttributeError, TypeError, IndexError):
+        pass
+    return ""
 
 
 def _extract_json(raw: str) -> dict | None:

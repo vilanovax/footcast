@@ -359,7 +359,8 @@ def select_for_episode(
             s.used_in_episode = True
             used_ids.add(s.id)
             iran_count += 1
-        elif s.region in ("europe", "world") and world_count < max_world:
+        elif s.region != "iran" and world_count < max_world:
+            # هر خبر معتبرِ غیرایرانی (اروپا/جهان/آسیا/…) به «جهان در سه پاس»
             s.section = WORLD_ROUNDUP
             s.used_in_episode = True
             used_ids.add(s.id)

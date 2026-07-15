@@ -58,6 +58,31 @@ def test_editing_text_invalidates_approval(tmp_path):
     assert "تغییر" in reason
 
 
+def test_editing_tts_file_invalidates_approval(tmp_path):
+    # رگرسیون #3: ویرایش دستی فایل .tts.txt باید تأیید را باطل کند
+    draft = _write_draft(tmp_path)
+    tts_file = tmp_path / "footcast-test.tts.txt"
+    tts_file.write_text("متن پاک آزمایشی برای تأیید.", encoding="utf-8")
+
+    approve_text(draft)
+    assert check_text_approval(draft)[0] is True
+
+    # ویرایش فایل قابل‌ویرایش → تأیید باطل
+    tts_file.write_text("متن ویرایش‌شده توسط بازبین.", encoding="utf-8")
+    ok, reason = check_text_approval(draft)
+    assert ok is False
+    assert "تغییر" in reason
+
+
+def test_tts_file_is_source_of_truth(tmp_path):
+    # متن از .tts.txt خوانده می‌شود، نه کپی JSON
+    from footcast.approval import read_tts_text
+    draft = _write_draft(tmp_path)
+    tts_file = tmp_path / "footcast-test.tts.txt"
+    tts_file.write_text("متن واقعی از فایل.", encoding="utf-8")
+    assert read_tts_text(draft) == "متن واقعی از فایل."
+
+
 def test_blocker_issue_prevents_approval(tmp_path):
     draft = _write_draft(tmp_path, issues=["هنوز عدد رقمی در متن TTS باقی مانده است."])
     with pytest.raises(RuntimeError):

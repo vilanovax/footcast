@@ -7,7 +7,7 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
-from .approval import check_text_approval
+from .approval import check_text_approval, read_tts_text
 from .asr_diff import diff_asr
 from .audio import assemble
 from .branding import apply_branding
@@ -142,9 +142,12 @@ def build_draft(config: Config, out_dir: Path | None = None) -> dict:
     tts_path.write_text(clean.text, encoding="utf-8")
     ssml_path.write_text(build_ssml(final_script, pron), encoding="utf-8")
 
-    # اتصال متن اجرا به Storyها (نسخه گفتاری هر خبر) برای هماهنگی سه خروجی
-    for story, seg in zip(used_stories, final_script.segments):
-        story.spoken_version = seg.body
+    # اتصال متن اجرا به Storyها با تطبیق لینک منبع (نه ترتیب، چون ترتیب/تعداد فرق دارد)
+    by_link = {src.url: st for st in stories for src in st.all_sources if src.url}
+    for seg in final_script.segments:
+        st = by_link.get(seg.link)
+        if st is not None:
+            st.spoken_version = seg.body
 
     # خروجی دوم و سوم: شونوت و کنترل کیفیت (§۱۸)
     notes_path = base.with_suffix(".show-notes.md")
@@ -153,7 +156,8 @@ def build_draft(config: Config, out_dir: Path | None = None) -> dict:
         build_show_notes(stories, config.content.show_name, final_script.date, pron),
         encoding="utf-8",
     )
-    qa = build_qa_report(stories, final_script.to_speech_text(), clean.issues)
+    # QA روی متن پاک TTS (همان چیزی که واقعاً خوانده می‌شود) محاسبه می‌شود
+    qa = build_qa_report(stories, clean.text, clean.issues)
     qa_path.write_text(json.dumps(qa, ensure_ascii=False, indent=2), encoding="utf-8")
 
     json_path.write_text(
@@ -214,10 +218,13 @@ def build_draft(config: Config, out_dir: Path | None = None) -> dict:
 
 
 def load_draft(json_path: str | Path) -> tuple[Script, str]:
-    """اسکریپت و متن پاک TTS را از فایل JSON پیش‌نویس بازمی‌خواند."""
+    """اسکریپت و متن پاک TTS را بازمی‌خواند.
+
+    متن TTS از فایل قابل‌ویرایش .tts.txt خوانده می‌شود تا ویرایش دستی مؤثر باشد.
+    """
     data = json.loads(Path(json_path).read_text(encoding="utf-8"))
     script = Script(**data["script"])
-    tts_text = (data.get("tts_clean") or {}).get("text", "") or script.to_speech_text()
+    tts_text = read_tts_text(json_path) or script.to_speech_text()
     return script, tts_text
 
 

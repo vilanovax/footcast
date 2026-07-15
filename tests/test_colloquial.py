@@ -33,6 +33,18 @@ def test_ra_becomes_ro():
     assert to_colloquial("برای تیم") == "برای تیم"
 
 
+def test_ra_does_not_corrupt_similar_words():
+    # رگرسیون: «چرا/ماجرا/اجرا» نباید به «چرو/ماجرو/اجرو» تبدیل شوند
+    assert to_colloquial("چرا این بازی مهمه") == "چرا این بازی مهمه"
+    assert "ماجرو" not in to_colloquial("ماجرا ادامه دارد")
+    assert "اجرو" not in to_colloquial("اجرا خوب بود")
+
+
+def test_adjective_ast_at_sentence_end():
+    # رگرسیون #6: «...ی است.» انتهای جمله هم باید تبدیل شود
+    assert to_colloquial("این خبر مهمی است.") == "این خبر مهمیه."
+
+
 def test_fix_over_colloquial_forms():
     assert to_colloquial("تیم واسه قهرمانی می‌خاد تلاش کنه") == \
         "تیم برای قهرمانی می‌خواد تلاش کنه"

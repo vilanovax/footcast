@@ -25,8 +25,11 @@ _MULTINEWLINE = re.compile(r"\n{3,}")
 _SCORE = re.compile(r"(?<!\d)(\d{1,2})\s*[-–:]\s*(\d{1,2})(?!\d)")
 # ساعت: 17:30
 _TIME = re.compile(r"(?<!\d)([01]?\d|2[0-3]):([0-5]\d)(?!\d)")
-# عدد صحیح یا اعشاری مستقل
-_NUMBER = re.compile(r"(?<![\w])\d+(?:\.\d+)?(?![\w])")
+# عدد صحیح یا اعشاری (مرز فقط رقم است تا عددِ چسبیده به حرف فارسی هم تبدیل شود)
+_NUMBER = re.compile(r"(?<!\d)\d+(?:\.\d+)?(?!\d)")
+# جداکننده هزارگان و اعشار (لاتین و فارسی) بین دو رقم
+_THOUSANDS = re.compile(r"(?<=\d)[,٬](?=\d)")
+_DECIMAL = re.compile(r"(?<=\d)٫(?=\d)")
 
 
 @dataclass
@@ -64,9 +67,13 @@ def _score_to_words(match: re.Match) -> str:
 
 def _numbers_to_words(text: str) -> str:
     text = normalize_digits(text)
+    # جداکننده‌ها را پیش از تبدیل بردار: ۱۰۰٬۰۰۰ → 100000، ۳٫۵ → 3.5
+    text = _THOUSANDS.sub("", text)
+    text = _DECIMAL.sub(".", text)
     text = _TIME.sub(_time_to_words, text)
     text = _SCORE.sub(_score_to_words, text)
-    text = _NUMBER.sub(lambda m: number_to_words(m.group(0)), text)
+    # فاصله در دو طرف تا عددِ چسبیده به حرف جدا خوانده شود (۹۰دقیقه → نود دقیقه)
+    text = _NUMBER.sub(lambda m: f" {number_to_words(m.group(0))} ", text)
     return text
 
 

@@ -45,6 +45,24 @@ def _text_approval_path(draft_json: Path) -> Path:
     return draft_json.with_suffix(".text-approval.json")
 
 
+def _tts_text_path(draft_json: Path) -> Path:
+    return draft_json.with_suffix(".tts.txt")
+
+
+def read_tts_text(draft_json: str | Path) -> str:
+    """متن پاک TTS را از فایل قابل‌ویرایش .tts.txt می‌خواند (منبع حقیقت).
+
+    اگر فایل نبود، به کپی داخل JSON برمی‌گردد. این تضمین می‌کند ویرایش دستی
+    فایل .tts.txt هم در تولید صوت اثر بگذارد و هم تأیید را باطل کند.
+    """
+    draft_json = Path(draft_json)
+    tts_file = _tts_text_path(draft_json)
+    if tts_file.exists():
+        return tts_file.read_text(encoding="utf-8")
+    data = _load_draft_json(draft_json)
+    return (data.get("tts_clean") or {}).get("text", "")
+
+
 def _audio_approval_path(draft_json: Path) -> Path:
     return draft_json.with_suffix(".audio-approval.json")
 
@@ -57,7 +75,8 @@ def approve_text(draft_json: str | Path, approved_by: str = "USER") -> Path:
     draft_json = Path(draft_json)
     data = _load_draft_json(draft_json)
     tts = data.get("tts_clean") or {}
-    text = tts.get("text", "")
+    # متن از فایل قابل‌ویرایش .tts.txt خوانده می‌شود (نه کپی JSON)
+    text = read_tts_text(draft_json)
     if not text:
         raise RuntimeError("متن پاک TTS در پیش‌نویس یافت نشد.")
 
@@ -75,7 +94,7 @@ def approve_text(draft_json: str | Path, approved_by: str = "USER") -> Path:
         "episodeId": _episode_id(draft_json),
         "approvalType": "TEXT",
         "status": "APPROVED",
-        "artifactPath": tts.get("path", ""),
+        "artifactPath": str(_tts_text_path(draft_json)),
         "artifactSha256": sha256_text(text),
         "approvedBy": approved_by,
         "approvedAt": _now(),
@@ -97,8 +116,7 @@ def check_text_approval(draft_json: str | Path) -> tuple[bool, str]:
     if approval.get("status") != "APPROVED" or approval.get("revokedAt"):
         return False, "تأیید متن باطل شده است."
 
-    data = _load_draft_json(draft_json)
-    current_text = (data.get("tts_clean") or {}).get("text", "")
+    current_text = read_tts_text(draft_json)
     current_hash = sha256_text(current_text)
     if current_hash != approval.get("artifactSha256"):
         return False, (

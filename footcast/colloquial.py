@@ -21,7 +21,8 @@ from .config import ROOT
 DEFAULT_COLLOQUIAL_PATH = ROOT / "config" / "colloquial.yaml"
 
 # «ی است» → «یه» (صفت + است)، مثل «خطرناکی است» → «خطرناکیه»
-_YE_AST = re.compile(r"(\S+ی)\s+است(?!\S)")
+# پایان جمله (قبل از نقطه/ویرگول/علامت) هم پوشش داده می‌شود.
+_YE_AST = re.compile(r"(\S+ی)\s+است(?=[\s.،؛!؟]|$)")
 
 
 @dataclass

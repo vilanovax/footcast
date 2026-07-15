@@ -75,7 +75,8 @@ def integer_to_words(n: int) -> str:
 def number_to_words(token: str) -> str:
     """رشته‌ای که ممکن است عدد صحیح یا اعشاری باشد را به حروف تبدیل می‌کند."""
     token = normalize_digits(token).strip()
-    token = token.replace(",", "").replace("،", "")
+    token = token.replace(",", "").replace("،", "").replace("٬", "")  # جداکننده هزارگان
+    token = token.replace("٫", ".")  # جداکننده اعشار فارسی
     if not token:
         return token
 

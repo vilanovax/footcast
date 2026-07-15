@@ -125,9 +125,8 @@ def generate_script(items: list[NewsItem], config: Config) -> Script:
         max_tokens=4000,
         messages=[{"role": "user", "content": prompt}],
     )
-    raw = message.content[0].text.strip()
-
-    data = _extract_json(raw)
+    raw = _message_text(message)
+    data = _extract_json(raw) if raw else None
     if data is None:
         print("  ⚠️  خروجی مدل JSON معتبر نبود — حالت آزمایشی.")
         return _fallback_script(items, config)
@@ -151,6 +150,18 @@ def generate_script(items: list[NewsItem], config: Config) -> Script:
         outro=data.get("outro", ""),
         language=config.content.language,
     )
+
+
+def _message_text(message) -> str:
+    """اولین بلوک متنی پاسخ را امن استخراج می‌کند (بدون کرش روی بلوک خالی/غیرمتنی)."""
+    try:
+        for block in message.content:
+            text = getattr(block, "text", None)
+            if text:
+                return text.strip()
+    except (AttributeError, TypeError, IndexError):
+        pass
+    return ""
 
 
 def _extract_json(raw: str) -> dict | None:

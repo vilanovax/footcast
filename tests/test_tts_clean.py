@@ -96,3 +96,17 @@ def test_clean_reports_long_sentence():
 def test_clean_no_digits_remain():
     out = clean_for_tts("۳ گل در ۹۰ دقیقه")
     assert not any(ch.isdigit() for ch in out.text)
+
+
+def test_clean_number_glued_to_letters():
+    # رگرسیون #2: عددِ چسبیده به حرف فارسی هم باید تبدیل شود
+    out = clean_for_tts("بازیکن در ۹۰دقیقه ۳گل زد")
+    assert not any(ch.isdigit() for ch in out.text)
+    assert "نود" in out.text and "سه" in out.text
+
+
+def test_clean_persian_separators():
+    # رگرسیون #5: جداکننده هزارگان/اعشار فارسی
+    out = clean_for_tts("قرارداد ۱۰۰٬۰۰۰ یورویی و رشد ۳٫۵ درصدی")
+    assert "٬" not in out.text and "٫" not in out.text
+    assert not any(ch.isdigit() for ch in out.text)
