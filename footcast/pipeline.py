@@ -10,8 +10,10 @@ from pathlib import Path
 from .approval import check_text_approval
 from .asr_diff import diff_asr
 from .audio import assemble
+from .branding import apply_branding
 from .config import Config, load_config
 from .generate import generate_script
+from .persian_date import now_tehran
 from .ingest import fetch_all
 from .models import ReviewResult, Script
 from .outputs import build_qa_report, build_show_notes
@@ -92,6 +94,10 @@ def build_draft(config: Config, out_dir: Path | None = None) -> dict:
     print("\n[۴/۵] بازبینی کامل محتوا ...")
     review = review_script(script, config)
     final_script = review.revised_script or script
+
+    # اعمال امضای ثابت برنامه (شروع و پایان یکسان؛ فقط تاریخ و تیترها متغیر)
+    when = now_tehran()
+    apply_branding(final_script, used_stories, when, config.content)
 
     print("\n[۵/۵] تولید متن پاک TTS (اعداد به حروف، حذف لاتین/مارک‌داون، تلفظ) ...")
     pron = PronunciationDictionary.load()

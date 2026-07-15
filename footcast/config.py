@@ -41,6 +41,17 @@ class ContentConfig:
     model: str = "claude-sonnet-5"
     words_per_item: int = 90
     show_name: str = "فوت‌کست"
+    # هویت ثابت برنامه
+    host_name: str = "ساشا"
+    intro_signature: str = (
+        "سلام. من {host} هستم و امروز {date}، "
+        "با تازه‌ترین و مهم‌ترین خبرهای فوتبال ایران و جهان همراه شما هستم."
+    )
+    outro_signature: str = (
+        "من {host} هستم و اینجا فوتبال را دنبال می‌کنیم، "
+        "نه هر چیزی را که لباس خبر پوشیده است. تا بسته بعدی، مراقب خودتان باشید."
+    )
+    follow_invite: str = "اگر از این برنامه خوشتان آمد، دنبالش کنید تا بسته بعدی از دستتان نرود."
 
 
 @dataclass
@@ -123,12 +134,17 @@ def load_config(path: str | Path = DEFAULT_CONFIG_PATH) -> Config:
     )
 
     cnt = raw.get("content", {})
+    _default_content = ContentConfig()
     content = ContentConfig(
         language=cnt.get("language", "fa"),
         tone=cnt.get("tone", "خبری و روان"),
         model=cnt.get("model", "claude-sonnet-5"),
         words_per_item=int(cnt.get("words_per_item", 90)),
         show_name=cnt.get("show_name", "فوت‌کست"),
+        host_name=cnt.get("host_name", _default_content.host_name),
+        intro_signature=cnt.get("intro_signature", _default_content.intro_signature),
+        outro_signature=cnt.get("outro_signature", _default_content.outro_signature),
+        follow_invite=cnt.get("follow_invite", _default_content.follow_invite),
     )
 
     aud = raw.get("audio", {})

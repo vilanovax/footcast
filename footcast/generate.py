@@ -46,14 +46,18 @@ def _build_prompt(items: list[NewsItem], config: Config) -> str:
 
 یک مقدمهٔ کوتاه (intro) که سه خبر اصلی را معرفی کند و یک جمع‌بندی کوتاه (outro) بنویس.
 
+یک «سؤال روز» کوتاه هم بنویس که مخاطب را به فکر دعوت کند و پاسخ کاملاً بدیهی نداشته باشد.
+
 خروجی را دقیقاً به صورت JSON با این ساختار بده (بدون هیچ توضیح اضافه):
 {{
   "intro": "متن مقدمه",
   "segments": [
     {{"headline": "تیتر", "body": "متن بخش", "source": "نام منبع", "link": "لینک"}}
   ],
+  "question": "سؤال روز",
   "outro": "متن جمع‌بندی"
 }}
+توجه: مقدمه و جمع‌بندی بعداً با امضای ثابت برنامه جایگزین می‌شوند؛ اما آن‌ها را بنویس.
 
 اخبار (به ترتیب اهمیت):
 {news_text}
@@ -126,6 +130,7 @@ def generate_script(items: list[NewsItem], config: Config) -> Script:
         date=date,
         intro=data.get("intro", ""),
         segments=segments,
+        question=data.get("question", ""),
         outro=data.get("outro", ""),
         language=config.content.language,
     )

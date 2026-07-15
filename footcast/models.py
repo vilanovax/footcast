@@ -46,6 +46,7 @@ class Script(BaseModel):
     intro: str = ""
     segments: list[Segment] = Field(default_factory=list)
     outro: str = ""
+    question: str = ""  # سؤال روز (§۱۰)
     language: str = "fa"
 
     def to_speech_text(self) -> str:
