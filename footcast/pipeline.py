@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .approval import check_text_approval
+from .audio import assemble
 from .config import Config, load_config
 from .generate import generate_script
 from .ingest import fetch_all
@@ -185,11 +186,37 @@ def synthesize_draft(
     )
     print(f"     {result['generated']} بخش تولید شد، {result['skipped']} بخش از قبل موجود بود.")
 
-    audio_path = concat_segments(result["manifest"], out_path)
+    # مونتاژ + کنترل Loudness با ffmpeg
+    seg_paths = [Path(s["audioPath"]) for s in sorted(result["manifest"]["segments"], key=lambda s: s["order"])]
+    print("  → مونتاژ اینترو/گفتار/اوترو و نرمال‌سازی Loudness ...")
+    report = assemble(
+        segment_paths=seg_paths,
+        out_dir=json_path.parent,
+        episode_id=episode_id,
+        intro_path=Path(config.audio.intro_path) if config.audio.intro_path else None,
+        outro_path=Path(config.audio.outro_path) if config.audio.outro_path else None,
+        target_lufs=config.audio.target_lufs,
+        max_true_peak_db=config.audio.max_true_peak_db,
+        sample_rate=config.audio.sample_rate,
+    )
+
+    qa_path = json_path.with_suffix(".audio-qa-report.json")
+    qa_path.write_text(json.dumps(report.to_dict(), ensure_ascii=False, indent=2), encoding="utf-8")
+
+    if report.normalized:
+        print(f"     Loudness: {report.output_lufs} LUFS (هدف {report.target_lufs}), "
+              f"True Peak: {report.true_peak_db} dBTP, مدت: {report.duration_ms/1000:.1f}s")
+        final_audio = Path(report.publish_path)
+    else:
+        # بازگشت: بدون ffmpeg، هم‌چسباندن ساده
+        for w in report.warnings:
+            print(f"     ⚠️  {w}")
+        final_audio = concat_segments(result["manifest"], out_path)
+
     # فایل مرجع متن کنار صوت برای QA/ASR
-    out_path.with_suffix(".tts.txt").write_text(tts_text, encoding="utf-8")
-    print(f"  ✅ فایل صوتی: {audio_path}")
-    return audio_path
+    Path(final_audio).with_suffix(".tts.txt").write_text(tts_text, encoding="utf-8")
+    print(f"  ✅ فایل صوتی: {final_audio}")
+    return Path(final_audio)
 
 
 def run_full(config: Config) -> dict:

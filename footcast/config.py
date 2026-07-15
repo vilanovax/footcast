@@ -42,11 +42,25 @@ class ContentConfig:
 
 
 @dataclass
+class AudioConfig:
+    sample_rate: int = 48000
+    target_lufs: float = -16.0
+    max_true_peak_db: float = -1.0
+    intro_path: str = ""
+    outro_path: str = ""
+
+
+@dataclass
 class Config:
     sources: list[Source]
     selection: SelectionConfig
     content: ContentConfig
+    audio: AudioConfig = None  # type: ignore[assignment]
     output_dir: Path = DEFAULT_OUTPUT_DIR
+
+    def __post_init__(self):
+        if self.audio is None:
+            self.audio = AudioConfig()
 
     # --- کلیدهای API از محیط ---
     @property
@@ -113,4 +127,13 @@ def load_config(path: str | Path = DEFAULT_CONFIG_PATH) -> Config:
         show_name=cnt.get("show_name", "فوت‌کست"),
     )
 
-    return Config(sources=sources, selection=selection, content=content)
+    aud = raw.get("audio", {})
+    audio = AudioConfig(
+        sample_rate=int(aud.get("sample_rate", 48000)),
+        target_lufs=float(aud.get("target_lufs", -16.0)),
+        max_true_peak_db=float(aud.get("max_true_peak_db", -1.0)),
+        intro_path=aud.get("intro_path", "") or os.getenv("INTRO_AUDIO_PATH", ""),
+        outro_path=aud.get("outro_path", "") or os.getenv("OUTRO_AUDIO_PATH", ""),
+    )
+
+    return Config(sources=sources, selection=selection, content=content, audio=audio)

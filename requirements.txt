@@ -13,3 +13,6 @@ anthropic>=0.40.0
 # CLI
 click>=8.1.7
 rich>=13.7.0
+
+# Audio assembly & loudness (bundled ffmpeg; system ffmpeg used if present)
+imageio-ffmpeg>=0.4.9

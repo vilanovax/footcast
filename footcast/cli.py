@@ -63,7 +63,12 @@ def approve_text_cmd(json_path: str) -> None:
 def approve_audio_cmd(json_path: str, audio_path: str | None) -> None:
     """تأیید صریح فایل صوتی (پیش‌نیاز انتشار)."""
     from pathlib import Path as _P
-    audio = audio_path or str(_P(json_path).with_suffix(".mp3"))
+    if audio_path:
+        audio = audio_path
+    else:
+        # پیش‌فرض: فایل انتشار مونتاژشده، وگرنه mp3 ساده
+        publish = _P(json_path).with_suffix(".audio-publish.mp3")
+        audio = str(publish if publish.exists() else _P(json_path).with_suffix(".mp3"))
     try:
         path = approve_audio(json_path, audio)
     except RuntimeError as exc:
