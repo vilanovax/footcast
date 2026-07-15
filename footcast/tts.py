@@ -37,8 +37,17 @@ def _chunk_text(text: str, max_chars: int = MAX_CHARS_PER_REQUEST) -> list[str]:
     return chunks
 
 
-def synthesize(script: Script, config: Config, out_path: str | Path) -> Path:
-    """اسکریپت را به یک فایل MP3 تبدیل می‌کند و مسیر آن را برمی‌گرداند."""
+def synthesize(
+    script: Script,
+    config: Config,
+    out_path: str | Path,
+    text: str | None = None,
+) -> Path:
+    """اسکریپت را به یک فایل MP3 تبدیل می‌کند و مسیر آن را برمی‌گرداند.
+
+    اگر `text` داده شود (متن پاک TTS)، همان استفاده می‌شود؛ در غیر این صورت از
+    متن خام اسکریپت استفاده می‌شود.
+    """
     out_path = Path(out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -48,7 +57,7 @@ def synthesize(script: Script, config: Config, out_path: str | Path) -> Path:
             "ELEVENLABS_API_KEY تنظیم نشده است. برای تولید فایل صوتی کلید را در .env قرار بده."
         )
 
-    text = script.to_speech_text()
+    text = text if text is not None else script.to_speech_text()
     chunks = _chunk_text(text)
     print(f"  → تبدیل به صوت در {len(chunks)} بخش با صدای {config.elevenlabs_voice_id} ...")
 

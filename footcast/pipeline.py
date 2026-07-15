@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from datetime import datetime, timezone
 from pathlib import Path
@@ -10,13 +11,19 @@ from .config import Config, load_config
 from .generate import generate_script
 from .ingest import fetch_all
 from .models import ReviewResult, Script
+from .pronunciation import PronunciationDictionary
 from .review import review_script
 from .select import select_top
 from .tts import synthesize
+from .tts_clean import clean_for_tts
 
 
 def _stamp() -> str:
     return datetime.now(tz=timezone.utc).strftime("%Y%m%d-%H%M")
+
+
+def _sha256(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
 def _script_to_markdown(script: Script, review: ReviewResult | None = None) -> str:
@@ -61,20 +68,39 @@ def build_draft(config: Config, out_dir: Path | None = None) -> dict:
     print("\n[۳/۴] تولید محتوای نوشتاری ...")
     script = generate_script(top, config)
 
-    print("\n[۴/۴] بازبینی کامل محتوا ...")
+    print("\n[۴/۵] بازبینی کامل محتوا ...")
     review = review_script(script, config)
     final_script = review.revised_script or script
+
+    print("\n[۵/۵] تولید متن پاک TTS (اعداد به حروف، حذف لاتین/مارک‌داون، تلفظ) ...")
+    pron = PronunciationDictionary.load()
+    clean = clean_for_tts(final_script.to_speech_text(), pronunciation=pron)
+    if clean.issues:
+        print(f"     {len(clean.issues)} نکته در متن TTS شناسایی شد.")
+    if clean.pronunciation_warnings:
+        print(f"     ⚠️  نام‌های بدون تلفظ: {', '.join(clean.pronunciation_warnings)}")
 
     # ذخیره خروجی‌ها
     base = out_dir / f"footcast-{stamp}"
     json_path = base.with_suffix(".json")
     md_path = base.with_suffix(".md")
+    tts_path = base.with_suffix(".tts.txt")
+
+    tts_path.write_text(clean.text, encoding="utf-8")
 
     json_path.write_text(
         json.dumps(
             {
                 "script": final_script.model_dump(),
                 "review": review.model_dump(exclude={"revised_script"}),
+                "tts_clean": {
+                    "text": clean.text,
+                    "sha256": _sha256(clean.text),
+                    "issues": clean.issues,
+                    "pronunciation_warnings": clean.pronunciation_warnings,
+                    "unverified_names": clean.unverified_names,
+                    "path": str(tts_path),
+                },
             },
             ensure_ascii=False,
             indent=2,
@@ -98,24 +124,28 @@ def build_draft(config: Config, out_dir: Path | None = None) -> dict:
     return {
         "json_path": json_path,
         "md_path": md_path,
+        "tts_path": tts_path,
+        "tts_text": clean.text,
         "audio_path": base.with_suffix(".mp3"),
         "script": final_script,
         "review": review,
     }
 
 
-def load_draft(json_path: str | Path) -> Script:
-    """اسکریپت را از فایل JSON پیش‌نویس بازمی‌خواند."""
+def load_draft(json_path: str | Path) -> tuple[Script, str]:
+    """اسکریپت و متن پاک TTS را از فایل JSON پیش‌نویس بازمی‌خواند."""
     data = json.loads(Path(json_path).read_text(encoding="utf-8"))
-    return Script(**data["script"])
+    script = Script(**data["script"])
+    tts_text = (data.get("tts_clean") or {}).get("text", "") or script.to_speech_text()
+    return script, tts_text
 
 
 def synthesize_draft(json_path: str | Path, config: Config, out_path: str | Path | None = None) -> Path:
-    """از روی پیش‌نویس تأییدشده فایل صوتی می‌سازد."""
+    """از روی پیش‌نویس تأییدشده فایل صوتی می‌سازد (با متن پاک TTS)."""
     json_path = Path(json_path)
-    script = load_draft(json_path)
+    script, tts_text = load_draft(json_path)
     out_path = Path(out_path) if out_path else json_path.with_suffix(".mp3")
-    return synthesize(script, config, out_path)
+    return synthesize(script, config, out_path, text=tts_text)
 
 
 def run_full(config: Config, force: bool = False) -> dict:
@@ -134,7 +164,9 @@ def run_full(config: Config, force: bool = False) -> dict:
         )
         return result
 
-    print("\n[۵/۵] تبدیل به فایل صوتی با ElevenLabs ...")
-    audio_path = synthesize(result["script"], config, result["audio_path"])
+    print("\n[صوت] تبدیل به فایل صوتی با ElevenLabs ...")
+    audio_path = synthesize(
+        result["script"], config, result["audio_path"], text=result["tts_text"]
+    )
     result["audio_path"] = audio_path
     return result

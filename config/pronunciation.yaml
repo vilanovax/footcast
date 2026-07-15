@@ -1,0 +1,60 @@
+# ---------------------------------------------------------------------------
+# فرهنگ تلفظ — نام‌های خارجی و اصطلاحات فوتبالی
+# ---------------------------------------------------------------------------
+# هر ورودی:
+#   original   : شکل اصلی (لاتین یا فارسیِ رایج) که در متن ظاهر می‌شود
+#   display_fa : شکل نمایشی فارسی (برای شونوت/متن)
+#   tts_fa     : شکلی که به TTS داده می‌شود تا درست تلفظ شود (با اعراب)
+#   entity     : PLAYER | COACH | TEAM | STADIUM | CITY | TOURNAMENT | ORGANIZATION | TERM
+#   verified   : آیا تلفظ توسط انسان تأیید شده؟
+#
+# نکته: نام مهمِ «تأییدنشده» پیش از تولید صوت نهایی باید هشدار (یا بلاکر) بدهد.
+
+entries:
+  - original: "Mbappé"
+    display_fa: "کیلیان امباپه"
+    tts_fa: "کیلیان اِمباپِه"
+    entity: PLAYER
+    verified: true
+
+  - original: "Mbappe"
+    display_fa: "امباپه"
+    tts_fa: "اِمباپِه"
+    entity: PLAYER
+    verified: true
+
+  - original: "Haaland"
+    display_fa: "هالند"
+    tts_fa: "هالَند"
+    entity: PLAYER
+    verified: true
+
+  - original: "Real Madrid"
+    display_fa: "رئال مادرید"
+    tts_fa: "رِآل مادرید"
+    entity: TEAM
+    verified: true
+
+  - original: "Barcelona"
+    display_fa: "بارسلونا"
+    tts_fa: "بارسِلونا"
+    entity: TEAM
+    verified: true
+
+  - original: "Champions League"
+    display_fa: "لیگ قهرمانان اروپا"
+    tts_fa: "لیگ قهرمانان اروپا"
+    entity: TOURNAMENT
+    verified: true
+
+  - original: "Premier League"
+    display_fa: "لیگ برتر انگلیس"
+    tts_fa: "لیگ برتر انگلیس"
+    entity: TOURNAMENT
+    verified: true
+
+  - original: "Guardiola"
+    display_fa: "گواردیولا"
+    tts_fa: "گواردیولا"
+    entity: COACH
+    verified: true
