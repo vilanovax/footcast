@@ -7,6 +7,7 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
+from .approval import check_text_approval
 from .config import Config, load_config
 from .generate import generate_script
 from .ingest import fetch_all
@@ -147,33 +148,40 @@ def load_draft(json_path: str | Path) -> tuple[Script, str]:
     return script, tts_text
 
 
-def synthesize_draft(json_path: str | Path, config: Config, out_path: str | Path | None = None) -> Path:
-    """از روی پیش‌نویس تأییدشده فایل صوتی می‌سازد (با متن پاک TTS)."""
+def synthesize_draft(
+    json_path: str | Path,
+    config: Config,
+    out_path: str | Path | None = None,
+    require_approval: bool = True,
+) -> Path:
+    """از روی پیش‌نویس تأییدشده فایل صوتی می‌سازد (با متن پاک TTS).
+
+    طبق قانون سند، بدون تأیید معتبر متن، تولید صوت مجاز نیست.
+    """
     json_path = Path(json_path)
+    if require_approval:
+        ok, reason = check_text_approval(json_path)
+        if not ok:
+            raise RuntimeError(f"تولید صوت مجاز نیست: {reason}")
+
     script, tts_text = load_draft(json_path)
     out_path = Path(out_path) if out_path else json_path.with_suffix(".mp3")
     return synthesize(script, config, out_path, text=tts_text)
 
 
-def run_full(config: Config, force: bool = False) -> dict:
-    """کل پایپلاین را از ابتدا تا فایل صوتی اجرا می‌کند.
+def run_full(config: Config) -> dict:
+    """پایپلاین را تا مرحله تأیید متن اجرا می‌کند و همان‌جا متوقف می‌شود.
 
-    اگر بازبینی تأیید نشده باشد و force=False باشد، پیش از تولید صوت متوقف می‌شود.
+    طبق سند، تولید صوت فقط پس از «تأیید صریح انسانی» مجاز است؛ بنابراین این
+    فرمان صوت نمی‌سازد و مسیر تأیید را نمایش می‌دهد.
     """
     result = build_draft(config)
-    review: ReviewResult = result["review"]
-
-    if not review.approved and not force:
-        print(
-            "\n⚠️  محتوا در بازبینی خودکار تأیید نشد. "
-            "متن را در فایل بالا بررسی و اصلاح کن، سپس دستور «synthesize» را اجرا کن، "
-            "یا برای تولید اجباری از --force استفاده کن."
-        )
-        return result
-
-    print("\n[صوت] تبدیل به فایل صوتی با ElevenLabs ...")
-    audio_path = synthesize(
-        result["script"], config, result["audio_path"], text=result["tts_text"]
+    json_path = result["json_path"]
+    print(
+        "\n📋 مراحل بعدی (دو دروازه تأیید انسانی):\n"
+        f"  ۱) متن را بررسی کن:      {result['md_path']}\n"
+        f"  ۲) تأیید متن:            python -m footcast approve-text {json_path}\n"
+        f"  ۳) تولید صوت:            python -m footcast synthesize {json_path}\n"
+        f"  ۴) تأیید صوت:            python -m footcast approve-audio {json_path}"
     )
-    result["audio_path"] = audio_path
     return result

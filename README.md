@@ -47,23 +47,34 @@ cp .env.example .env
 
 ## استفاده
 
-```bash
-# ۱) تولید و بازبینی محتوا (بدون صوت) — خروجی در پوشه output/
-python -m footcast draft
+مسیر کامل شامل **دو دروازه تأیید انسانی اجباری** است (تأیید متن، تأیید صوت).
+بدون تأیید متن، هیچ صوتی ساخته نمی‌شود؛ و هر تغییر در متن پس از تأیید، تأیید را باطل می‌کند.
 
-# ۲) پس از بررسی متن، تبدیل پیش‌نویس تأییدشده به فایل صوتی
+```bash
+# ۱) تولید، بازبینی سه‌مرحله‌ای و ساخت متن پاک TTS (بدون صوت)
+python -m footcast draft          # یا: python -m footcast run
+
+# ۲) متن را در فایل .md بررسی کن، سپس تأیید کن (قفل هش)
+python -m footcast approve-text output/footcast-YYYYMMDD-HHMM.json
+
+# ۳) تبدیل پیش‌نویس تأییدشده به فایل صوتی (فقط پس از تأیید متن مجاز است)
 python -m footcast synthesize output/footcast-YYYYMMDD-HHMM.json
 
-# یا اجرای کامل مسیر در یک مرحله (اگر بازبینی خودکار تأیید کند، صوت هم می‌سازد)
-python -m footcast run
-python -m footcast run --force        # حتی اگر بازبینی تأیید نکرد، صوت بساز
+# ۴) تأیید فایل صوتی (پیش‌نیاز انتشار)
+python -m footcast approve-audio output/footcast-YYYYMMDD-HHMM.json
+
+# بررسی معتبربودن تأیید متن در هر لحظه
+python -m footcast check-approval output/footcast-YYYYMMDD-HHMM.json
 ```
 
 هر اجرا این فایل‌ها را در `output/` می‌سازد:
 
-- `footcast-<تاریخ>.md` — متن قابل‌خواندن به همراه گزارش بازبینی
-- `footcast-<تاریخ>.json` — داده ساختاریافته (ورودی مرحله صوت)
+- `footcast-<تاریخ>.md` — متن قابل‌خواندن به همراه گزارش بازبینی سه‌پاس
+- `footcast-<تاریخ>.json` — داده ساختاریافته + متن پاک TTS و هش آن
+- `footcast-<تاریخ>.tts.txt` — متن پاک آماده گفتار
+- `footcast-<تاریخ>.text-approval.json` — سند تأیید متن (با هش)
 - `footcast-<تاریخ>.mp3` — فایل صوتی نهایی
+- `footcast-<تاریخ>.audio-approval.json` — سند تأیید صوت (با هش)
 
 ## پیکربندی
 
