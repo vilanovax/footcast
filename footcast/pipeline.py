@@ -8,13 +8,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .approval import check_text_approval
+from .asr_diff import diff_asr
 from .audio import assemble
 from .config import Config, load_config
 from .generate import generate_script
 from .ingest import fetch_all
 from .models import ReviewResult, Script
 from .pronunciation import PronunciationDictionary
-from .providers import get_tts_provider
+from .providers import get_asr_provider, get_tts_provider
 from .review import review_script
 from .select import select_top
 from .tts_clean import clean_for_tts
@@ -216,6 +217,19 @@ def synthesize_draft(
     # فایل مرجع متن کنار صوت برای QA/ASR
     Path(final_audio).with_suffix(".tts.txt").write_text(tts_text, encoding="utf-8")
     print(f"  ✅ فایل صوتی: {final_audio}")
+
+    # مرحله QA صوت با ASR: صوت را دوباره متن کن و با متن تأییدشده مقایسه کن
+    print("  → کنترل کیفیت صوت با ASR (مقایسه متن/صوت) ...")
+    asr = get_asr_provider(config)
+    asr_result = asr.transcribe(str(final_audio))
+    diff = diff_asr(tts_text, asr_result.text)
+    diff_path = json_path.with_suffix(".asr-diff.json")
+    diff_path.write_text(json.dumps(diff.to_dict(), ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"     تطابق متن/صوت: {diff.match_ratio:.0%}"
+          + (f" — {diff.blocker_count} بلاکر، {diff.major_count} مهم" if diff.items else " — بدون اختلاف"))
+    if diff.blocker_count:
+        print("     ⚠️  اختلاف بلاکر شناسایی شد — پیش از تأیید صوت بررسی کن.")
+
     return Path(final_audio)
 
 
