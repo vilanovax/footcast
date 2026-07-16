@@ -43,8 +43,18 @@ class ElevenLabsTtsProvider(TtsProvider):
         if resp.status_code == 200:
             return resp.content
 
+        # ۴۰۳ با بدنه‌ی HTML معمولاً یعنی بلاک جغرافیایی/آی‌پی (نه مشکل مدل یا کلید)
+        body = resp.text[:200]
+        if resp.status_code == 403 and ("<html" in body.lower() or "forbidden" in body.lower()):
+            raise TtsProviderError(
+                "دسترسی به ElevenLabs مسدود است (۴۰۳). به‌احتمال زیاد آی‌پی/کشورت "
+                "بلاک شده — با VPN به یک کشور پشتیبانی‌شده (مثل آمریکا یا اروپا) وصل شو "
+                "و دوباره اجرا کن. این خطا ربطی به مدل v3 یا کلید ندارد.",
+                retryable=False,
+            )
+
         retryable = resp.status_code not in _NON_RETRYABLE
         raise TtsProviderError(
-            f"خطای ElevenLabs {resp.status_code}: {resp.text[:200]}",
+            f"خطای ElevenLabs {resp.status_code}: {body}",
             retryable=retryable,
         )
