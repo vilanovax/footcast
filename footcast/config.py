@@ -16,6 +16,17 @@ DEFAULT_CONFIG_PATH = ROOT / "config" / "sources.yaml"
 DEFAULT_OUTPUT_DIR = ROOT / "output"
 
 
+def _clean_key(val: str | None) -> str | None:
+    """کلید نامعتبر/placeholder را None برمی‌گرداند تا مسیر بدون‌کلید فعال شود."""
+    if not val:
+        return None
+    val = val.strip()
+    # مقادیر نمونه‌ی .env.example را واقعی حساب نکن
+    if not val or "..." in val or val in ("sk-ant-", "sk_..."):
+        return None
+    return val
+
+
 @dataclass
 class Source:
     name: str
@@ -78,11 +89,11 @@ class Config:
     # --- کلیدهای API از محیط ---
     @property
     def anthropic_api_key(self) -> str | None:
-        return os.getenv("ANTHROPIC_API_KEY")
+        return _clean_key(os.getenv("ANTHROPIC_API_KEY"))
 
     @property
     def elevenlabs_api_key(self) -> str | None:
-        return os.getenv("ELEVENLABS_API_KEY")
+        return _clean_key(os.getenv("ELEVENLABS_API_KEY"))
 
     @property
     def elevenlabs_voice_id(self) -> str:

@@ -196,20 +196,24 @@ def review_script(script: Script, config: Config) -> ReviewResult:
     except ImportError:
         return _fallback_review(script)
 
-    client = anthropic.Anthropic(api_key=config.anthropic_api_key)
-    model = config.content.model
-    current = script
-    passes: list[PassResult] = []
+    try:
+        client = anthropic.Anthropic(api_key=config.anthropic_api_key)
+        model = config.content.model
+        current = script
+        passes: list[PassResult] = []
 
-    for pass_number in (1, 2, 3):
-        name = _PASS_NAMES[pass_number]
-        result, current = _run_llm_pass(client, model, pass_number, name, current)
-        passes.append(result)
-        # قانون بازگشت: اگر Pass 2 یا 3 تغییر factual داشت، برگرد به Pass 1
-        if pass_number > 1 and result.facts_changed:
-            print(f"    ↩︎  Pass {pass_number} تغییر factual داشت — بازگشت به Pass 1.")
-            result_p1, current = _run_llm_pass(client, model, 1, _PASS_NAMES[1], current)
-            passes.append(result_p1)
+        for pass_number in (1, 2, 3):
+            name = _PASS_NAMES[pass_number]
+            result, current = _run_llm_pass(client, model, pass_number, name, current)
+            passes.append(result)
+            # قانون بازگشت: اگر Pass 2 یا 3 تغییر factual داشت، برگرد به Pass 1
+            if pass_number > 1 and result.facts_changed:
+                print(f"    ↩︎  Pass {pass_number} تغییر factual داشت — بازگشت به Pass 1.")
+                result_p1, current = _run_llm_pass(client, model, 1, _PASS_NAMES[1], current)
+                passes.append(result_p1)
+    except Exception as exc:  # noqa: BLE001 - خطای API نباید کل اجرا را متوقف کند
+        print(f"  ⚠️  بازبینی هوشمند ناموفق بود ({type(exc).__name__}) — بازبینی پایه اجرا می‌شود.")
+        return _fallback_review(script)
 
     # بررسی‌های قطعی نهایی (مکمل LLM)
     basic = _basic_checks(current)

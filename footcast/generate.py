@@ -116,15 +116,18 @@ def generate_script(items: list[NewsItem], config: Config) -> Script:
         print("  ⚠️  کتابخانه anthropic نصب نیست — حالت آزمایشی.")
         return _fallback_script(items, config)
 
-    client = anthropic.Anthropic(api_key=config.anthropic_api_key)
     prompt = _build_prompt(items, config)
-
     print(f"  → تولید محتوا با مدل {config.content.model} ...")
-    message = client.messages.create(
-        model=config.content.model,
-        max_tokens=4000,
-        messages=[{"role": "user", "content": prompt}],
-    )
+    try:
+        client = anthropic.Anthropic(api_key=config.anthropic_api_key)
+        message = client.messages.create(
+            model=config.content.model,
+            max_tokens=4000,
+            messages=[{"role": "user", "content": prompt}],
+        )
+    except Exception as exc:  # noqa: BLE001 - خطای API نباید کل اجرا را متوقف کند
+        print(f"  ⚠️  تولید هوشمند ناموفق بود ({type(exc).__name__}) — حالت آزمایشی.")
+        return _fallback_script(items, config)
     raw = _message_text(message)
     data = _extract_json(raw) if raw else None
     if data is None:
