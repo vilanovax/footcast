@@ -7,7 +7,7 @@ name = "footcast"
 version = "0.1.0"
 description = "استخراج اخبار فوتبال ایران و جهان، تولید محتوای نوشتاری، بازبینی و تبدیل به فایل صوتی با ElevenLabs"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.9"
 license = { text = "MIT" }
 authors = [{ name = "vilanovax" }]
 keywords = ["podcast", "football", "tts", "persian", "news", "elevenlabs"]
