@@ -96,22 +96,53 @@ def build_episode() -> tuple[Script, str, PronunciationDictionary]:
     return final, clean.text, pron
 
 
+def _synthesize(tts_text, model_id):
+    provider = get_tts_provider(cfg)
+    if provider.name != "elevenlabs":
+        raise SystemExit(
+            "❌ Provider روی ElevenLabs نیست. در .env بگذار: TTS_PROVIDER=elevenlabs "
+            "و ELEVENLABS_API_KEY=... ."
+        )
+    print(f"→ تولید صوت با model={model_id} voice={cfg.elevenlabs_voice_id} ...")
+    settings = {"stability": 0.5, "similarity_boost": 0.75, "style": 0.0}
+    return synthesize_segments(
+        provider=provider, text=tts_text, out_dir=OUT, episode_id=EPISODE_ID,
+        approved_text_sha256=hashlib.sha256((tts_text + model_id).encode()).hexdigest(),
+        voice_id=cfg.elevenlabs_voice_id, model_id=model_id, settings=settings,
+    )
+
+
 def main() -> None:
     final, tts_text, _ = build_episode()
     (OUT / f"{EPISODE_ID}.tts.txt").write_text(tts_text, encoding="utf-8")
     print(f"متن TTS آماده شد ({len(tts_text.split())} کلمه).")
 
-    provider = get_tts_provider(cfg)
-    print(f"تولید صوت با provider={provider.name} model={cfg.elevenlabs_model_id} voice={cfg.elevenlabs_voice_id} ...")
-    settings = {"stability": 0.5, "similarity_boost": 0.75, "style": 0.0}
-    res = synthesize_segments(
-        provider=provider, text=tts_text, out_dir=OUT, episode_id=EPISODE_ID,
-        approved_text_sha256=hashlib.sha256(tts_text.encode()).hexdigest(),
-        voice_id=cfg.elevenlabs_voice_id, model_id=cfg.elevenlabs_model_id, settings=settings,
-    )
+    # تلاش با مدل تنظیم‌شده؛ اگر شکست خورد (مثلاً v3 در دسترس نبود) به مدل پایدار برگرد
+    model = cfg.elevenlabs_model_id
+    try:
+        res = _synthesize(tts_text, model)
+    except Exception as exc:  # noqa: BLE001
+        print(f"⚠️  خطا با مدل «{model}»: {exc}")
+        if model != "eleven_multilingual_v2":
+            print("↩︎  تلاش دوباره با مدل پایدار eleven_multilingual_v2 ...")
+            try:
+                res = _synthesize(tts_text, "eleven_multilingual_v2")
+            except Exception as exc2:  # noqa: BLE001
+                raise SystemExit(f"❌ تولید صوت ناموفق بود: {exc2}")
+        else:
+            raise SystemExit(f"❌ تولید صوت ناموفق بود: {exc}")
     print(f"  {res['generated']} بخش تولید شد، {res['skipped']} از قبل موجود.")
 
     seg_paths = [Path(s["audioPath"]) for s in sorted(res["manifest"]["segments"], key=lambda s: s["order"])]
+
+    from footcast.audio import find_ffmpeg
+    if find_ffmpeg() is None:
+        # بدون ffmpeg هم حداقل بخش‌ها را به هم بچسبان تا فایلی داشته باشی
+        from footcast.tts_job import concat_segments
+        out = concat_segments(res["manifest"], OUT / f"{EPISODE_ID}.mp3")
+        print(f"⚠️  ffmpeg نصب نیست (نرمال‌سازی انجام نشد). فایل خام: {out.resolve()}")
+        return
+
     report = assemble(
         seg_paths, OUT, EPISODE_ID,
         intro_path=Path(cfg.audio.intro_path) if cfg.audio.intro_path else None,
@@ -119,11 +150,14 @@ def main() -> None:
         target_lufs=cfg.audio.target_lufs, max_true_peak_db=cfg.audio.max_true_peak_db,
         sample_rate=cfg.audio.sample_rate,
     )
-    if report.normalized:
-        print(f"✅ فایل صوتی: {report.publish_path}")
-        print(f"   Loudness: {report.output_lufs} LUFS | True Peak: {report.true_peak_db} dBTP")
+    mp3 = Path(report.publish_path)
+    if report.normalized and mp3.exists():
+        print(f"\n✅ فایل صوتی ساخته شد: {mp3.resolve()}")
+        print(f"   Loudness: {report.output_lufs} LUFS | True Peak: {report.true_peak_db} dBTP | مدت: {report.duration_ms/1000:.1f}s")
     else:
-        print("⚠️ مونتاژ/نرمال‌سازی کامل نشد:", "؛ ".join(report.warnings))
+        print("⚠️ مونتاژ/نرمال‌سازی کامل نشد:", "؛ ".join(report.warnings) or "نامشخص")
+        # فایل‌های بخش‌ها همچنان موجودند
+        print("بخش‌های صوتی خام در:", (OUT / f"{EPISODE_ID}-segments").resolve())
 
 
 if __name__ == "__main__":
