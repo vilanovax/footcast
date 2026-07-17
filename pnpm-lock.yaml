@@ -33,9 +33,15 @@ importers:
       '@footcast/queue':
         specifier: workspace:*
         version: link:../../packages/queue
+      '@footcast/reporting':
+        specifier: workspace:*
+        version: link:../../packages/reporting
       '@footcast/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@footcast/tts':
+        specifier: workspace:*
+        version: link:../../packages/tts
       '@footcast/validation':
         specifier: workspace:*
         version: link:../../packages/validation
@@ -216,12 +222,18 @@ importers:
       '@footcast/logger':
         specifier: workspace:*
         version: link:../../packages/logger
+      '@footcast/podcast-script':
+        specifier: workspace:*
+        version: link:../../packages/podcast-script
       '@footcast/queue':
         specifier: workspace:*
         version: link:../../packages/queue
       '@footcast/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@footcast/tts':
+        specifier: workspace:*
+        version: link:../../packages/tts
       sequelize:
         specifier: ^6.37.5
         version: 6.37.8(pg-hstore@2.3.4)(pg@8.22.0)
@@ -365,6 +377,22 @@ importers:
         specifier: ^5.7.3
         version: 5.9.3
 
+  packages/podcast-script:
+    dependencies:
+      '@footcast/shared':
+        specifier: workspace:*
+        version: link:../shared
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.5
+        version: 22.20.1
+      tsx:
+        specifier: ^4.19.2
+        version: 4.23.1
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+
   packages/queue:
     dependencies:
       '@footcast/shared':
@@ -384,8 +412,32 @@ importers:
         specifier: ^5.7.3
         version: 5.9.3
 
+  packages/reporting:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.5
+        version: 22.20.1
+      tsx:
+        specifier: ^4.19.2
+        version: 4.23.1
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+
   packages/shared:
     devDependencies:
+      tsx:
+        specifier: ^4.19.2
+        version: 4.23.1
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+
+  packages/tts:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.5
+        version: 22.20.1
       tsx:
         specifier: ^4.19.2
         version: 4.23.1

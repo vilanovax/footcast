@@ -40,21 +40,21 @@ Exact/semantic dup، embedding mock (JSONB + cosine در اپ)، event create/me
 
 **پذیرش:** سردبیر جریان کامل review را روی موبایل انجام دهد
 
-## فاز شش: Podcast Builder ← **دامنه بعدی**
+## فاز شش: Podcast Builder ← **انجام‌شده**
 
 Episode CRUD، select/sort، generate script، versioning، fact-check، approval
 
 **پذیرش:** اسکریپت ۸–۱۲ دقیقه با منبع برای ادعاها
 
-## فاز هفت: Audio + Publication
+## فاز هفت: Audio + Publication ← **انجام‌شده**
 
-TTS adapter، audio job، storage، player، publication، RSS metadata export
+TTS adapter (`@footcast/tts` mock)، `generate-audio` / `publish-episode` jobs، storage محلی، player وب، publication، RSS (`/podcasts/rss.xml`)
 
 **پذیرش:** AUDIO_READY و PUBLISHED با فایل قابل پخش
 
-## فاز هشت: Reporting + Optimization
+## فاز هشت: Reporting + Optimization ← **انجام‌شده**
 
-Cost/token dashboards، source/model performance، acceptance rate، latency
+Cost/token dashboards، source/model performance، acceptance rate، latency، عمق صف‌ها — `@footcast/reporting` + `GET /dashboard` + `GET /reports/*` + UI `/dashboard`
 
 **پذیرش:** KPIهای اصلی در داشبورد قابل مشاهده
 

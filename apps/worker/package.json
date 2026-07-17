@@ -18,8 +18,10 @@
     "@footcast/editorial-rules": "workspace:*",
     "@footcast/event-clustering": "workspace:*",
     "@footcast/logger": "workspace:*",
+    "@footcast/podcast-script": "workspace:*",
     "@footcast/queue": "workspace:*",
     "@footcast/shared": "workspace:*",
+    "@footcast/tts": "workspace:*",
     "sequelize": "^6.37.5"
   },
   "devDependencies": {

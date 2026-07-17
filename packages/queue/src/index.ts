@@ -33,6 +33,30 @@ export interface ScoreEventJobData {
   reason?: 'cluster_complete' | 'manual' | 'retry';
 }
 
+export interface GeneratePodcastJobData {
+  episodeId: string;
+  reason?: 'manual' | 'retry';
+  actorUserId?: string;
+}
+
+export interface FactCheckScriptJobData {
+  episodeId: string;
+  scriptVersionId: string;
+  reason?: 'manual' | 'after_generate' | 'retry';
+}
+
+export interface GenerateAudioJobData {
+  episodeId: string;
+  reason?: 'manual' | 'retry';
+  actorUserId?: string;
+}
+
+export interface PublishEpisodeJobData {
+  episodeId: string;
+  reason?: 'manual' | 'retry';
+  actorUserId?: string;
+}
+
 export function redisConnectionFromUrl(redisUrl: string): ConnectionOptions {
   const url = new URL(redisUrl);
   return {

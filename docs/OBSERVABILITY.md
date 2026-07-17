@@ -52,6 +52,8 @@
 - Error Tracking متمرکز (Sentry یا معادل — اختیاری فاز صفر)
 - JobError و CrawlError در DB برای پنل
 
-## داشبورد صف
+## داشبورد صف و KPI (فاز ۸)
 
-در فازهای بعدی: UI وضعیت BullMQ (waiting/active/failed/delayed) + manual retry.
+- `GET /dashboard` — هزینه/توکن ۲۴س، latency AI/crawl، نرخ پذیرش تحریریه، عمق صف‌ها
+- `GET /reports`, `/reports/models`, `/reports/sources`, `/reports/editorial`
+- UI: `/dashboard` (وب)

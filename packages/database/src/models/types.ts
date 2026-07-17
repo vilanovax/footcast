@@ -346,3 +346,80 @@ export interface EditorialNoteAttrs {
   createdAt?: Date;
   updatedAt?: Date;
 }
+
+export interface PodcastEpisodeAttrs {
+  id: string;
+  title: string;
+  slug: string;
+  status: string;
+  language: string;
+  targetDurationMin: number;
+  hostNotes: string | null;
+  createdBy: string | null;
+  currentScriptVersionId: string | null;
+  metadata: Record<string, unknown> | null;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface PodcastEpisodeItemAttrs {
+  id: string;
+  episodeId: string;
+  eventId: string;
+  sortOrder: number;
+  isSelected: boolean;
+  editorNote: string | null;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface PodcastScriptVersionAttrs {
+  id: string;
+  episodeId: string;
+  version: number;
+  status: string;
+  title: string;
+  bodyMd: string;
+  wordCount: number;
+  estimatedDurationSec: number;
+  claimsJson: unknown[];
+  segmentsJson: unknown[];
+  factCheckJson: Record<string, unknown> | null;
+  generator: string;
+  createdBy: string | null;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface PodcastAudioAttrs {
+  id: string;
+  episodeId: string;
+  scriptVersionId: string | null;
+  provider: string;
+  model: string;
+  voiceId: string;
+  mimeType: string;
+  storagePath: string;
+  publicUrl: string | null;
+  fileSizeBytes: number;
+  durationSec: number;
+  reportedDurationSec: number;
+  status: string;
+  metadata: Record<string, unknown> | null;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface PodcastPublicationAttrs {
+  id: string;
+  episodeId: string;
+  audioId: string;
+  title: string;
+  description: string | null;
+  audioUrl: string;
+  guid: string;
+  publishedAt: Date;
+  rssMetadata: Record<string, unknown> | null;
+  createdAt?: Date;
+  updatedAt?: Date;
+}

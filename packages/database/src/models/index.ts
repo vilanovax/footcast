@@ -9,6 +9,7 @@ import {
   CoverageScope,
   CrawlRunStatus,
   CrawlTrigger,
+  EpisodeStatus,
   EventStatus,
   FeedType,
   HealthStatus,
@@ -30,6 +31,11 @@ import type {
   NewsEventArticleAttrs,
   NewsEventAttrs,
   NewsEventConflictAttrs,
+  PodcastAudioAttrs,
+  PodcastEpisodeAttrs,
+  PodcastEpisodeItemAttrs,
+  PodcastPublicationAttrs,
+  PodcastScriptVersionAttrs,
   PermissionAttrs,
   PromptTemplateAttrs,
   PromptVersionAttrs,
@@ -67,6 +73,11 @@ export type DbModels = {
   EditorialScore: ModelStatic<Model<EditorialScoreAttrs>>;
   EditorialDecision: ModelStatic<Model<EditorialDecisionAttrs>>;
   EditorialNote: ModelStatic<Model<EditorialNoteAttrs>>;
+  PodcastEpisode: ModelStatic<Model<PodcastEpisodeAttrs>>;
+  PodcastEpisodeItem: ModelStatic<Model<PodcastEpisodeItemAttrs>>;
+  PodcastScriptVersion: ModelStatic<Model<PodcastScriptVersionAttrs>>;
+  PodcastAudio: ModelStatic<Model<PodcastAudioAttrs>>;
+  PodcastPublication: ModelStatic<Model<PodcastPublicationAttrs>>;
   AppSetting: ModelStatic<Model<AppSettingAttrs>>;
   AuditLog: ModelStatic<Model<AuditLogAttrs>>;
   RefreshToken: ModelStatic<Model<RefreshTokenAttrs>>;
@@ -525,6 +536,98 @@ export function initModels(sequelize: Sequelize): DbModels {
     { tableName: 'editorial_notes', underscored: true },
   );
 
+  const PodcastEpisode = sequelize.define<Model<PodcastEpisodeAttrs>>(
+    'PodcastEpisode',
+    {
+      id: { type: DataTypes.UUID, primaryKey: true },
+      title: { type: DataTypes.STRING(300), allowNull: false },
+      slug: { type: DataTypes.STRING(160), allowNull: false, unique: true },
+      status: {
+        type: DataTypes.STRING(32),
+        allowNull: false,
+        defaultValue: EpisodeStatus.DRAFT,
+        validate: { isIn: [Object.values(EpisodeStatus)] },
+      },
+      language: { type: DataTypes.STRING(8), allowNull: false, defaultValue: 'fa' },
+      targetDurationMin: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 10 },
+      hostNotes: { type: DataTypes.TEXT, allowNull: true },
+      createdBy: { type: DataTypes.UUID, allowNull: true },
+      currentScriptVersionId: { type: DataTypes.UUID, allowNull: true },
+      metadata: { type: DataTypes.JSONB, allowNull: true },
+    },
+    { tableName: 'podcast_episodes', underscored: true },
+  );
+
+  const PodcastEpisodeItem = sequelize.define<Model<PodcastEpisodeItemAttrs>>(
+    'PodcastEpisodeItem',
+    {
+      id: { type: DataTypes.UUID, primaryKey: true },
+      episodeId: { type: DataTypes.UUID, allowNull: false },
+      eventId: { type: DataTypes.UUID, allowNull: false },
+      sortOrder: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+      isSelected: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
+      editorNote: { type: DataTypes.TEXT, allowNull: true },
+    },
+    { tableName: 'podcast_episode_items', underscored: true },
+  );
+
+  const PodcastScriptVersion = sequelize.define<Model<PodcastScriptVersionAttrs>>(
+    'PodcastScriptVersion',
+    {
+      id: { type: DataTypes.UUID, primaryKey: true },
+      episodeId: { type: DataTypes.UUID, allowNull: false },
+      version: { type: DataTypes.INTEGER, allowNull: false },
+      status: { type: DataTypes.STRING(32), allowNull: false, defaultValue: 'draft' },
+      title: { type: DataTypes.STRING(300), allowNull: false },
+      bodyMd: { type: DataTypes.TEXT, allowNull: false },
+      wordCount: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+      estimatedDurationSec: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+      claimsJson: { type: DataTypes.JSONB, allowNull: false, defaultValue: [] },
+      segmentsJson: { type: DataTypes.JSONB, allowNull: false, defaultValue: [] },
+      factCheckJson: { type: DataTypes.JSONB, allowNull: true },
+      generator: { type: DataTypes.STRING(64), allowNull: false, defaultValue: 'mock-v1' },
+      createdBy: { type: DataTypes.UUID, allowNull: true },
+    },
+    { tableName: 'podcast_script_versions', underscored: true },
+  );
+
+  const PodcastAudio = sequelize.define<Model<PodcastAudioAttrs>>(
+    'PodcastAudio',
+    {
+      id: { type: DataTypes.UUID, primaryKey: true },
+      episodeId: { type: DataTypes.UUID, allowNull: false },
+      scriptVersionId: { type: DataTypes.UUID, allowNull: true },
+      provider: { type: DataTypes.STRING(64), allowNull: false },
+      model: { type: DataTypes.STRING(120), allowNull: false },
+      voiceId: { type: DataTypes.STRING(120), allowNull: false },
+      mimeType: { type: DataTypes.STRING(64), allowNull: false },
+      storagePath: { type: DataTypes.STRING(1000), allowNull: false },
+      publicUrl: { type: DataTypes.STRING(1000), allowNull: true },
+      fileSizeBytes: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+      durationSec: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+      reportedDurationSec: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+      status: { type: DataTypes.STRING(32), allowNull: false, defaultValue: 'ready' },
+      metadata: { type: DataTypes.JSONB, allowNull: true },
+    },
+    { tableName: 'podcast_audios', underscored: true },
+  );
+
+  const PodcastPublication = sequelize.define<Model<PodcastPublicationAttrs>>(
+    'PodcastPublication',
+    {
+      id: { type: DataTypes.UUID, primaryKey: true },
+      episodeId: { type: DataTypes.UUID, allowNull: false, unique: true },
+      audioId: { type: DataTypes.UUID, allowNull: false },
+      title: { type: DataTypes.STRING(300), allowNull: false },
+      description: { type: DataTypes.TEXT, allowNull: true },
+      audioUrl: { type: DataTypes.STRING(1000), allowNull: false },
+      guid: { type: DataTypes.STRING(160), allowNull: false, unique: true },
+      publishedAt: { type: DataTypes.DATE, allowNull: false },
+      rssMetadata: { type: DataTypes.JSONB, allowNull: true },
+    },
+    { tableName: 'podcast_publications', underscored: true },
+  );
+
   User.belongsToMany(Role, {
     through: UserRole,
     foreignKey: 'userId',
@@ -574,6 +677,17 @@ export function initModels(sequelize: Sequelize): DbModels {
   EditorialDecision.belongsTo(NewsEvent, { foreignKey: 'eventId', as: 'event' });
   NewsEvent.hasMany(EditorialNote, { foreignKey: 'eventId', as: 'notes' });
   EditorialNote.belongsTo(NewsEvent, { foreignKey: 'eventId', as: 'event' });
+  PodcastEpisode.hasMany(PodcastEpisodeItem, { foreignKey: 'episodeId', as: 'items' });
+  PodcastEpisodeItem.belongsTo(PodcastEpisode, { foreignKey: 'episodeId', as: 'episode' });
+  PodcastEpisodeItem.belongsTo(NewsEvent, { foreignKey: 'eventId', as: 'event' });
+  NewsEvent.hasMany(PodcastEpisodeItem, { foreignKey: 'eventId', as: 'podcastItems' });
+  PodcastEpisode.hasMany(PodcastScriptVersion, { foreignKey: 'episodeId', as: 'scripts' });
+  PodcastScriptVersion.belongsTo(PodcastEpisode, { foreignKey: 'episodeId', as: 'episode' });
+  PodcastEpisode.hasMany(PodcastAudio, { foreignKey: 'episodeId', as: 'audios' });
+  PodcastAudio.belongsTo(PodcastEpisode, { foreignKey: 'episodeId', as: 'episode' });
+  PodcastEpisode.hasOne(PodcastPublication, { foreignKey: 'episodeId', as: 'publication' });
+  PodcastPublication.belongsTo(PodcastEpisode, { foreignKey: 'episodeId', as: 'episode' });
+  PodcastPublication.belongsTo(PodcastAudio, { foreignKey: 'audioId', as: 'audio' });
   PromptTemplate.hasMany(PromptVersion, { foreignKey: 'templateId', as: 'versions' });
   PromptVersion.belongsTo(PromptTemplate, { foreignKey: 'templateId', as: 'template' });
   Source.hasMany(CrawlRun, { foreignKey: 'sourceId', as: 'crawlRuns' });
@@ -608,6 +722,11 @@ export function initModels(sequelize: Sequelize): DbModels {
     EditorialScore,
     EditorialDecision,
     EditorialNote,
+    PodcastEpisode,
+    PodcastEpisodeItem,
+    PodcastScriptVersion,
+    PodcastAudio,
+    PodcastPublication,
     AppSetting,
     AuditLog,
     RefreshToken,

@@ -31,10 +31,22 @@ export default async function HomePage() {
 
         <div className="mt-10 flex flex-wrap gap-3">
           <a
-            href="/inbox"
+            href="/podcasts"
             className="rounded-xl bg-accent px-5 py-3 text-sm font-semibold text-ink transition hover:brightness-110"
           >
-            صندوق ورودی سردبیر
+            پادکست‌ساز
+          </a>
+          <a
+            href="/inbox"
+            className="rounded-xl border border-fog/30 px-5 py-3 text-sm font-semibold text-fog transition hover:bg-white/5"
+          >
+            صندوق ورودی
+          </a>
+          <a
+            href="/dashboard"
+            className="rounded-xl border border-fog/30 px-5 py-3 text-sm font-semibold text-fog transition hover:bg-white/5"
+          >
+            داشبورد
           </a>
           <a
             href="/login"
@@ -57,7 +69,7 @@ export default async function HomePage() {
           </div>
           <div>
             <dt className="text-fog/50">فاز جاری</dt>
-            <dd className="mt-1 font-semibold text-white">Editorial Inbox</dd>
+            <dd className="mt-1 font-semibold text-white">Podcast Builder</dd>
           </div>
           <div>
             <dt className="text-fog/50">پلتفرم</dt>

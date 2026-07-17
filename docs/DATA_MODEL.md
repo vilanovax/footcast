@@ -65,6 +65,25 @@
 ### article_embeddings
 بردار معنایی: `embedding` JSONB (ابعاد ۲۵۶ mock)، `contentHash`، `provider/model`. شباهت cosine در اپ محاسبه می‌شود؛ `CREATE EXTENSION vector` در migration در صورت وجود pgvector بی‌خطر است.
 
+## جداول فاز ۶ — Podcast Builder
+
+### podcast_episodes
+`title`, `slug`, `status` (EpisodeStatus)، `targetDurationMin` (۸–۱۲)، `hostNotes`, `currentScriptVersionId`.
+
+### podcast_episode_items
+لینک اپیزود↔`NewsEvent` با `sortOrder` و `isSelected`.
+
+### podcast_script_versions
+نسخه‌های اسکریپت: `bodyMd`, `wordCount`, `estimatedDurationSec`, `claimsJson`, `segmentsJson`, `factCheckJson`.
+
+## جداول فاز ۷ — Audio + Publication
+
+### podcast_audios
+خروجی TTS: `provider`, `model`, `voiceId`, `mimeType`, `storagePath`, `publicUrl`, `fileSizeBytes`, `durationSec`, `reportedDurationSec`, `status`.
+
+### podcast_publications
+انتشار اپیزود: `audioId`, `title`, `description`, `audioUrl`, `guid` یکتا، `publishedAt`, `rssMetadata` JSONB.
+
 ## کاتالوگ کامل Entityها
 
 User, Role, Permission, Source, SourceFeed, SourceRule, SourceHealth, CrawlRun, CrawlError, RawArticle, ArticleContent, ArticleExtraction, ArticleEntity, ArticleClaim, ArticleMetric, NewsEvent, NewsEventArticle, NewsEventEntity, NewsEventClaim, NewsEventConflict, NewsEventTimeline, Club, League, Competition, Country, Person, Match, Season, EditorialRule, EditorialScore, EditorialDecision, EditorialNote, PodcastEpisode, PodcastEpisodeItem, PodcastScript, PodcastScriptVersion, PodcastAudio, PodcastPublication, AIProvider, AIModel, AIPipeline, AIRequest, AIUsage, AICost, PromptTemplate, PromptVersion, Job, JobRun, JobError, Notification, AuditLog, AppSetting, FeatureFlag

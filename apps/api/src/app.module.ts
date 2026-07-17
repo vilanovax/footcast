@@ -13,6 +13,8 @@ import { DashboardModule } from './dashboard/dashboard.module.js';
 import { AiModule } from './ai/ai.module.js';
 import { EventsModule } from './events/events.module.js';
 import { EditorialModule } from './editorial/editorial.module.js';
+import { PodcastsModule } from './podcasts/podcasts.module.js';
+import { ReportsModule } from './reports/reports.module.js';
 
 @Module({
   imports: [
@@ -30,6 +32,8 @@ import { EditorialModule } from './editorial/editorial.module.js';
     AiModule,
     EventsModule,
     EditorialModule,
+    PodcastsModule,
+    ReportsModule,
   ],
 })
 export class AppModule {}

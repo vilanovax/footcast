@@ -77,6 +77,16 @@ Auth: `Authorization: Bearer <access_token>`
 | POST | `/editorial/events/:id/reject` | رد |
 | POST | `/editorial/events/:id/decide` | approve/reject یکپارچه |
 | POST | `/editorial/events/:id/notes` | یادداشت سردبیر |
+| GET | `/podcasts` | لیست اپیزودها |
+| POST | `/podcasts` | ساخت اپیزود (+ eventIds اختیاری) |
+| GET | `/podcasts/:id` | جزئیات اپیزود / items / scripts |
+| POST | `/podcasts/:id/items` | افزودن اخبار APPROVED/SELECTED |
+| PUT | `/podcasts/:id/items/reorder` | ترتیب اخبار |
+| DELETE | `/podcasts/:id/items/:eventId` | حذف خبر از اپیزود |
+| POST | `/podcasts/:id/generate-script` | تولید اسکریپت |
+| GET | `/podcasts/:id/script` | آخرین نسخه اسکریپت |
+| POST | `/podcasts/:id/approve-script` | تأیید اسکریپت |
+| POST | `/podcasts/:id/approve` | تأیید اپیزود برای TTS |
 | GET | `/settings` | AppSetting |
 | PATCH | `/settings/:key` | به‌روزرسانی تنظیم |
 | GET | `/dashboard` | آمار پایه فاز صفر |
@@ -114,7 +124,10 @@ Auth: `Authorization: Bearer <access_token>`
 /podcasts/:id/generate-script
 /podcasts/:id/fact-check
 /podcasts/:id/generate-audio
+/podcasts/:id/audio
+/podcasts/:id/audio/file   (public stream)
 /podcasts/:id/publish
+/podcasts/rss.xml          (public RSS)
 /ai/providers
 /ai/models
 /ai/pipelines
@@ -125,6 +138,10 @@ Auth: `Authorization: Bearer <access_token>`
 /jobs/:id/retry
 /dashboard
 /reports
+/reports/models
+/reports/sources
+/reports/editorial
+/ai/usage?days=
 /settings
 /health
 ```

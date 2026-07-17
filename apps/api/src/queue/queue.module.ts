@@ -5,16 +5,24 @@ import {
   type ClusterEventJobData,
   type CrawlSourceJobData,
   type ExtractArticleJobData,
+  type FactCheckScriptJobData,
   type FetchArticleJobData,
+  type GenerateAudioJobData,
+  type GeneratePodcastJobData,
   type ParseArticleJobData,
+  type PublishEpisodeJobData,
   type ScoreEventJobData,
 } from '@footcast/queue';
 import {
   CLUSTER_EVENT_QUEUE,
   CRAWL_SOURCE_QUEUE,
   EXTRACT_ARTICLE_QUEUE,
+  FACT_CHECK_SCRIPT_QUEUE,
   FETCH_ARTICLE_QUEUE,
+  GENERATE_AUDIO_QUEUE,
+  GENERATE_PODCAST_QUEUE,
   PARSE_ARTICLE_QUEUE,
+  PUBLISH_EPISODE_QUEUE,
   SCORE_EVENT_QUEUE,
 } from './queue.tokens.js';
 
@@ -47,6 +55,26 @@ import {
       provide: SCORE_EVENT_QUEUE,
       useFactory: () => createQueue<ScoreEventJobData>('score-event', getConfig().REDIS_URL),
     },
+    {
+      provide: GENERATE_PODCAST_QUEUE,
+      useFactory: () =>
+        createQueue<GeneratePodcastJobData>('generate-podcast', getConfig().REDIS_URL),
+    },
+    {
+      provide: FACT_CHECK_SCRIPT_QUEUE,
+      useFactory: () =>
+        createQueue<FactCheckScriptJobData>('fact-check-script', getConfig().REDIS_URL),
+    },
+    {
+      provide: GENERATE_AUDIO_QUEUE,
+      useFactory: () =>
+        createQueue<GenerateAudioJobData>('generate-audio', getConfig().REDIS_URL),
+    },
+    {
+      provide: PUBLISH_EPISODE_QUEUE,
+      useFactory: () =>
+        createQueue<PublishEpisodeJobData>('publish-episode', getConfig().REDIS_URL),
+    },
   ],
   exports: [
     CRAWL_SOURCE_QUEUE,
@@ -55,12 +83,14 @@ import {
     EXTRACT_ARTICLE_QUEUE,
     CLUSTER_EVENT_QUEUE,
     SCORE_EVENT_QUEUE,
+    GENERATE_PODCAST_QUEUE,
+    FACT_CHECK_SCRIPT_QUEUE,
+    GENERATE_AUDIO_QUEUE,
+    PUBLISH_EPISODE_QUEUE,
   ],
 })
 export class QueueModule implements OnModuleDestroy {
   constructor() {}
 
-  async onModuleDestroy(): Promise<void> {
-    // Queues closed with process exit; Nest will GC providers.
-  }
+  async onModuleDestroy(): Promise<void> {}
 }
