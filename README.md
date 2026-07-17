@@ -1,124 +1,46 @@
-# ⚽ فوت‌کست (Footcast)
+# Football Newsroom / اتاق خبر فوتبال
 
-سرویس استخراج مهم‌ترین اخبار فوتبال ایران و اروپا، تولید محتوای نوشتاری با هوش مصنوعی،
-بازبینی کامل، و تبدیل آن به **فایل صوتی** با استفاده از **ElevenLabs**.
+سیستم سردبیری هوشمند فوتبال — جمع‌آوری، پالایش، امتیازدهی و تولید پادکست خبری.
 
-## پایپلاین
+> دامنهٔ فعلی: **مستندات کامل + فاز صفر (Foundation)**  
+> پرامپت اولیه: [`docs/PROJECT_PROMPT.md`](docs/PROJECT_PROMPT.md) · قانون Cursor: `.cursor/rules/football-newsroom.mdc`
 
-```
-جمع‌آوری RSS → انتخاب → تولید متن (Claude) → بازبینی سه‌پاس → متن پاک TTS
-   → [تأیید متن] → تولید صوت سگمنت‌محور → مونتاژ + Loudness → QA با ASR → [تأیید صوت]
-```
-
-هر مرحله یک ماژول مستقل در پوشه `footcast/` است:
-
-| ماژول | نقش |
-|-------|-----|
-| `ingest.py` | خواندن اخبار از فیدهای RSS و حذف تکراری‌ها |
-| `select.py` | امتیازدهی بر اساس تازگی، اعتبار منبع و کلمات کلیدی |
-| `generate.py` | تولید اسکریپت خبری منسجم با Claude |
-| `review.py` | بازبینی سه‌مرحله‌ای (صحت → لحن محاوره → آمادگی TTS) |
-| `tts_clean.py` | متن پاک TTS: عدد به حروف، نتیجه/ساعت گفتاری، حذف لاتین/مارک‌داون |
-| `pronunciation.py` | فرهنگ تلفظ نام‌های خارجی + گزارش نام‌های ناشناخته |
-| `glossary.py` | فرهنگ واژگان فوتبال: حفظ اصطلاحات جاافتاده، تبدیل شکل مصنوعی به فارسی طبیعی، تلفظ TTS |
-| `colloquial.py` | بازنویسی «محاوره معیار»: تبدیل افعال رسمی به گفتاری + شناسایی لحن افراطی |
-| `branding.py` | امضای ثابت شروع/پایان برنامه (مجری، تاریخ شمسی، تیترها) |
-| `approval.py` | دروازه‌های تأیید متن/صوت با قفل هش |
-| `segments.py` | تقسیم متن به بخش‌های قطعی بدون شکستن جمله |
-| `tts_job.py` | تولید صوت ایدمپوتنت با Job Key، Retry و Manifest |
-| `providers/` | اینترفیس TTS/ASR + ElevenLabs + Mock (اجرا بدون کلید) |
-| `audio.py` | مونتاژ اینترو/گفتار/اوترو و نرمال‌سازی Loudness با ffmpeg |
-| `asr_diff.py` | مقایسه متن ASR با متن تأییدشده و دسته‌بندی اختلاف‌ها |
-| `pipeline.py` | ارکستراسیون کل مسیر |
-| `cli.py` | رابط خط فرمان |
-
-### حالت Mock (بدون کلید API)
-
-با `TTS_PROVIDER=mock` و `ASR_PROVIDER=mock` (پیش‌فرض بدون کلید)، کل مسیر —
-از جمع‌آوری تا تولید صوت، مونتاژ، نرمال‌سازی Loudness و QA — بدون هیچ کلید API و
-بدون هزینه اجرا می‌شود. برای محتوای هوشمند و صوت واقعی، کلیدهای Anthropic و
-ElevenLabs را تنظیم کن.
-
-## راه‌اندازی
+## شروع سریع
 
 ```bash
-# ۱. ساخت محیط مجازی و نصب وابستگی‌ها
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-
-# ۲. تنظیم کلیدهای API
 cp .env.example .env
-# سپس فایل .env را ویرایش کن و کلیدهای Anthropic و ElevenLabs را وارد کن
+pnpm install
+pnpm docker:up
+pnpm -r build
+pnpm db:migrate
+pnpm db:seed
+pnpm dev:api
+# ترمینال دیگر:
+pnpm dev:web
 ```
 
-### کلیدهای موردنیاز
+- Web: http://localhost:3000  
+- API: http://localhost:3001/api/v1  
+- Swagger: http://localhost:3001/api/docs  
+- Admin seed: `admin@football-newsroom.local` / `ChangeMeAdmin123!`
 
-- `ANTHROPIC_API_KEY` — برای تولید و بازبینی محتوا ([console.anthropic.com](https://console.anthropic.com/))
-- `ELEVENLABS_API_KEY` — برای تبدیل به صوت ([elevenlabs.io](https://elevenlabs.io/app/settings/api-keys))
-- `ELEVENLABS_VOICE_ID` — شناسه صدای دلخواه (صدایی که فارسی را خوب می‌خواند انتخاب کن)
+## ساختار
 
-> **بدون کلید هم کار می‌کند:** اگر `ANTHROPIC_API_KEY` تنظیم نشده باشد، پایپلاین در «حالت آزمایشی»
-> اجرا می‌شود و از خود اخبار خام برای ساخت اسکریپت استفاده می‌کند (بدون بازنویسی هوشمند).
-> برای تولید فایل صوتی، کلید ElevenLabs الزامی است.
-
-## استفاده
-
-مسیر کامل شامل **دو دروازه تأیید انسانی اجباری** است (تأیید متن، تأیید صوت).
-بدون تأیید متن، هیچ صوتی ساخته نمی‌شود؛ و هر تغییر در متن پس از تأیید، تأیید را باطل می‌کند.
-
-```bash
-# ۱) تولید، بازبینی سه‌مرحله‌ای و ساخت متن پاک TTS (بدون صوت)
-python -m footcast draft          # یا: python -m footcast run
-
-# ۲) متن را در فایل .md بررسی کن، سپس تأیید کن (قفل هش)
-python -m footcast approve-text output/footcast-YYYYMMDD-HHMM.json
-
-# ۳) تبدیل پیش‌نویس تأییدشده به فایل صوتی (فقط پس از تأیید متن مجاز است)
-python -m footcast synthesize output/footcast-YYYYMMDD-HHMM.json
-
-# ۴) تأیید فایل صوتی (پیش‌نیاز انتشار)
-python -m footcast approve-audio output/footcast-YYYYMMDD-HHMM.json
-
-# بررسی معتبربودن تأیید متن در هر لحظه
-python -m footcast check-approval output/footcast-YYYYMMDD-HHMM.json
+```text
+apps/web api worker crawler
+packages/shared database ai editorial-rules validation logger config ui
+docs/
+infra/docker/
 ```
 
-هر اجرا این فایل‌ها را در `output/` می‌سازد:
+## مستندات
 
-- `footcast-<تاریخ>.md` — نسخه تحریریه: متن + نام‌ها به شکل «فارسی (English)» + گزارش بازبینی
-- `footcast-<تاریخ>.tts.txt` — نسخه TTS: فقط فارسیِ قابل‌تلفظ، بدون انگلیسی
-- `footcast-<تاریخ>.ssml` — نسخه SSML با مکث‌های `<break>` بین بخش‌ها
-- `footcast-<تاریخ>.show-notes.md` — نسخه انتشار: نام‌ها به شکل «فارسی — English»
-- `footcast-<تاریخ>.json` — داده ساختاریافته + متن پاک TTS و هش آن
-- `footcast-<تاریخ>.text-approval.json` — سند تأیید متن (با هش)
-- `footcast-<تاریخ>.mp3` — فایل صوتی نهایی
-- `footcast-<تاریخ>.audio-approval.json` — سند تأیید صوت (با هش)
-
-## پیکربندی
-
-همه‌چیز از `config/sources.yaml` قابل تنظیم است:
-
-- **منابع خبری:** افزودن/حذف فید RSS، تعیین منطقه (ایران/اروپا/جهان) و وزن اعتبار
-- **انتخاب اخبار:** حداکثر تعداد، بازه زمانی، و کلمات کلیدی که اهمیت خبر را بالا می‌برند
-- **محتوا:** زبان خروجی (`fa`/`en`)، لحن، مدل Claude، طول هر بخش، نام برنامه
-
-## زمان‌بندی خودکار (اختیاری)
-
-برای اجرای روزانه می‌توان از cron استفاده کرد. مثال (هر روز ساعت ۸ صبح):
-
-```cron
-0 8 * * * cd /path/to/footcast && .venv/bin/python -m footcast run >> output/cron.log 2>&1
-```
+ببینید [`docs/FOUNDATION_BRIEF.md`](docs/FOUNDATION_BRIEF.md) و فهرست کامل در [`docs/`](docs/).
 
 ## تست
 
 ```bash
-python -m pytest tests/ -v
+pnpm --filter @footcast/shared test
+pnpm --filter @footcast/editorial-rules test
+pnpm --filter @footcast/api test
 ```
-
-## نکته درباره شبکه
-
-جمع‌آوری اخبار نیازمند دسترسی به اینترنت (سایت‌های خبری) است. در محیط‌هایی با سیاست شبکه
-محدود ممکن است برخی فیدها بلاک شوند؛ در این صورت منابع در دسترس را در `config/sources.yaml`
-جایگزین کن.

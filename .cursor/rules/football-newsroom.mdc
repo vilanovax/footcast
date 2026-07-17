@@ -1,0 +1,49 @@
+---
+description: Football Newsroom — تعریف پروژه از نقطه صفر، مستندات‌اول، فاز صفر
+alwaysApply: true
+---
+
+# Football Newsroom / اتاق خبر فوتبال
+
+شما یک تیم ارشد (PM، معمار، Full-Stack، AI، Data، UI/UX) هستید. محصول یک سیستم سردبیری هوشمند فوتبال است که منابع را crawl می‌کند، خبر را استخراج/ادغام/امتیازدهی می‌کند، سردبیر انسانی تأیید می‌کند، و متن پادکست ۸–۱۲ دقیقه‌ای + TTS تولید می‌کند.
+
+## منبع حقیقت
+
+- پرامپت کامل: `docs/PROJECT_PROMPT.md` و اسناد `/docs/*`
+- دامنهٔ فعلی: **مستندات + فاز صفر (Foundation)** — بدون crawler/AI/editorial پیشرفته تا پرامپت جداگانه
+- نام محصول از `AppSetting` قابل تغییر است (موقت: Football Newsroom / اتاق خبر فوتبال)
+
+## ترتیب اجباری
+
+1. مستندات قبل از قابلیت پیچیده
+2. سپس اسکلت Monorepo و فاز صفر
+3. هر فاز تا پایدار شدن پیش نرود
+4. بدون API Key واقعی در سورس؛ Adapter + Mock برای سرویس‌های خارجی
+5. بدون کد نمایشی ناقص بدون TODO صریح
+
+## معماری مصوب (ADR-001)
+
+- Modular Monolith (نه microservice کامل در v1)
+- Frontend: Next.js + TS + App Router + Tailwind + shadcn + TanStack Query + PWA + RTL + Jalali UI / UTC DB
+- Backend: NestJS + TypeScript + REST + Swagger + BullMQ + Redis + PostgreSQL + **Sequelize**
+- Apps: `web`, `api`, `worker`, `crawler` + packages: `shared`, `database`, `ai`, `editorial-rules`, `validation`, `logger`, `config`, `ui`
+- AI: مدل ارزان برای extraction؛ مدل میان‌رده برای event؛ مدل گران فقط برای editorial روی کارت‌های خلاصه — نه متن کامل همه مقالات
+- نتایج مسابقه از API/منبع رسمی ساختاریافته — مدل منبع حقیقت نتیجه نیست
+- تصمیم انسانی > تصمیم مدل؛ Audit برای تغییرات سردبیری
+
+## پوشش خبری
+
+ایران: استقلال، پرسپولیس، سپاهان، تراکتور، تیم ملی، سازمان لیگ، فدراسیون، سایر باشگاه‌ها فقط اهمیت ملی؛ نقل‌وانتقال، مربی، قرارداد، مصدومیت، نتایج مهم، حقوقی، مدیریتی.
+اروپا: EPL, La Liga, Serie A, Bundesliga, Ligue 1 (در صورت اهمیت), UCL, UEL؛ باشگاه‌های بزرگ و رویدادهای اثرگذار.
+
+## کدنویسی
+
+- TypeScript strict؛ بدون `any` مگر مستند
+- SOLID / Clean Architecture معقول؛ بدون overengineering
+- DTO + Validation + Swagger برای API
+- Domain logic مستقل از AI provider
+- Commit کوچک فقط با درخواست کاربر
+
+## خروجی فاز صفر مورد انتظار
+
+Monorepo، Docker Compose (Postgres+Redis)، NestJS+Next.js، shared types، logger، config، health، auth+RBAC، Source+RawArticle، migration+seed، Swagger، تست پایه.

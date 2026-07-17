@@ -1,0 +1,25 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-0: #0b3d2e;
+  --bg-1: #124a38;
+  --ink: #f3f7f4;
+  --accent: #c6a15b;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Vazirmatn", "IBM Plex Sans Arabic", sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(198, 161, 91, 0.22), transparent 55%),
+    radial-gradient(900px 500px at 100% 0%, rgba(231, 240, 235, 0.12), transparent 50%),
+    linear-gradient(160deg, var(--bg-0), var(--bg-1) 45%, #0a2f24);
+}

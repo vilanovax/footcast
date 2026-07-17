@@ -1,0 +1,34 @@
+{
+  "name": "football-newsroom",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@9.15.9",
+  "scripts": {
+    "dev": "pnpm -r --parallel --filter @footcast/api --filter @footcast/web --filter @footcast/worker --filter @footcast/crawler run dev",
+    "dev:api": "pnpm --filter @footcast/api dev",
+    "dev:web": "pnpm --filter @footcast/web dev",
+    "dev:crawler": "pnpm --filter @footcast/crawler dev",
+    "dev:worker": "pnpm --filter @footcast/worker dev",
+    "build": "pnpm -r run build",
+    "test": "pnpm -r run test",
+    "lint": "pnpm -r run lint",
+    "docker:up": "docker compose -f infra/docker/docker-compose.yml up -d",
+    "docker:down": "docker compose -f infra/docker/docker-compose.yml down",
+    "db:migrate": "pnpm --filter @footcast/database migrate",
+    "db:migrate:undo": "pnpm --filter @footcast/database migrate:undo",
+    "db:seed": "pnpm --filter @footcast/database seed",
+    "typecheck": "pnpm -r run typecheck"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "pnpm": {
+    "packageExtensions": {
+      "sequelize-cli": {
+        "dependencies": {
+          "resolve": "^1.22.8"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "name": "@footcast/worker",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "tsc-watch -p tsconfig.json --onSuccess \"node dist/main.js\"",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/main.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "echo \"no tests\"",
+    "lint": "echo \"no lint yet\""
+  },
+  "dependencies": {
+    "@footcast/ai": "workspace:*",
+    "@footcast/article-pipeline": "workspace:*",
+    "@footcast/config": "workspace:*",
+    "@footcast/database": "workspace:*",
+    "@footcast/editorial-rules": "workspace:*",
+    "@footcast/event-clustering": "workspace:*",
+    "@footcast/logger": "workspace:*",
+    "@footcast/queue": "workspace:*",
+    "@footcast/shared": "workspace:*",
+    "sequelize": "^6.37.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "tsc-watch": "^6.3.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
+}

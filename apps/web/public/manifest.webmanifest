@@ -1,0 +1,12 @@
+{
+  "name": "اتاق خبر فوتبال",
+  "short_name": "اتاق خبر",
+  "description": "سردبیر هوشمند فوتبال",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0B3D2E",
+  "theme_color": "#0B3D2E",
+  "lang": "fa",
+  "dir": "rtl",
+  "icons": []
+}

@@ -1,0 +1,35 @@
+import { Module } from '@nestjs/common';
+import { DatabaseModule } from './database/database.module.js';
+import { RedisModule } from './redis/redis.module.js';
+import { QueueModule } from './queue/queue.module.js';
+import { HealthModule } from './health/health.module.js';
+import { AuthModule } from './auth/auth.module.js';
+import { UsersModule } from './users/users.module.js';
+import { RolesModule } from './roles/roles.module.js';
+import { SourcesModule } from './sources/sources.module.js';
+import { ArticlesModule } from './articles/articles.module.js';
+import { SettingsModule } from './settings/settings.module.js';
+import { DashboardModule } from './dashboard/dashboard.module.js';
+import { AiModule } from './ai/ai.module.js';
+import { EventsModule } from './events/events.module.js';
+import { EditorialModule } from './editorial/editorial.module.js';
+
+@Module({
+  imports: [
+    DatabaseModule,
+    RedisModule,
+    QueueModule,
+    HealthModule,
+    AuthModule,
+    UsersModule,
+    RolesModule,
+    SourcesModule,
+    ArticlesModule,
+    SettingsModule,
+    DashboardModule,
+    AiModule,
+    EventsModule,
+    EditorialModule,
+  ],
+})
+export class AppModule {}

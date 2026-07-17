@@ -1,20 +1,17 @@
-# Python
-__pycache__/
-*.py[cod]
-*.egg-info/
-.venv/
-venv/
-env/
-
-# Secrets
+node_modules
+dist
+.next
+.turbo
+coverage
 .env
-
-# Generated output
-output/
-*.mp3
-*.wav
-
-# OS / editor
+.env.local
+*.log
 .DS_Store
-.idea/
-.vscode/
+.venv
+__pycache__
+*.pyc
+.pytest_cache
+uploads
+tmp
+data
+*.tsbuildinfo

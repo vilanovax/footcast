@@ -1,0 +1,32 @@
+services:
+  postgres:
+    # JSONB embeddings work on stock Postgres; switch to pgvector/pgvector:pg16 when registry allows
+    image: postgres:16-alpine
+    container_name: footcast-postgres
+    environment:
+      POSTGRES_USER: footcast
+      POSTGRES_PASSWORD: footcast
+      POSTGRES_DB: footcast
+    ports:
+      - "55432:5432"
+    volumes:
+      - footcast_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U footcast -d footcast"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: footcast-redis
+    ports:
+      - "56379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  footcast_pg:
