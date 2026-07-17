@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type { Database } from '@footcast/database';
+import { createNotification, type Database } from '@footcast/database';
 import type { Logger } from '@footcast/logger';
 import { generatePodcastScript } from '@footcast/podcast-script';
 import type { FactCheckScriptJobData, GeneratePodcastJobData, Queue } from '@footcast/queue';
@@ -87,6 +87,30 @@ export async function processGeneratePodcastJob(
       createdBy: data.actorUserId ?? null,
     });
 
+    const inputTokens = Math.max(1, scriptItems.length * 180);
+    const outputTokens = Math.max(1, Math.round(generated.wordCount * 1.3));
+    // Local generator is free; keep a synthetic estimate for cost-per-episode visibility.
+    const estimatedCost = Number(((inputTokens + outputTokens) * 0.0000002).toFixed(6));
+    await db.models.AiRequest.create({
+      id: randomUUID(),
+      provider: 'local',
+      model: generated.generator,
+      pipelineStage: 'podcast_script',
+      promptVersionId: null,
+      relatedArticleId: null,
+      relatedEpisodeId: data.episodeId,
+      inputTokens,
+      outputTokens,
+      cachedInputTokens: 0,
+      reasoningTokens: 0,
+      estimatedCost,
+      actualCost: 0,
+      latencyMs: 0,
+      status: 'success',
+      error: null,
+      metadata: { scriptId, version, wordCount: generated.wordCount },
+    });
+
     await episode.update({
       status: EpisodeStatus.SCRIPT_READY,
       currentScriptVersionId: scriptId,
@@ -97,8 +121,19 @@ export async function processGeneratePodcastJob(
           version,
           wordCount: generated.wordCount,
           estimatedDurationSec: generated.estimatedDurationSec,
+          estimatedCost,
         },
       },
+    });
+
+    await createNotification(db, {
+      type: 'podcast.script_ready',
+      title: 'اسکریپت پادکست آماده شد',
+      body: episode.getDataValue('title'),
+      entityType: 'PodcastEpisode',
+      entityId: data.episodeId,
+      href: `/podcasts/${data.episodeId}`,
+      metadata: { scriptId, version },
     });
 
     if (factCheckQueue) {

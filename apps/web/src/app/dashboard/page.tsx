@@ -74,6 +74,15 @@ type SourceRow = {
   failedArticles: number;
 };
 
+type EpisodeCostRow = {
+  episodeId: string;
+  title: string;
+  status: string | null;
+  requests: number;
+  tokens: number;
+  estimatedCost: number;
+};
+
 function fmtNum(n: number | null | undefined, digits = 0): string {
   if (n === null || n === undefined || Number.isNaN(n)) return '—';
   return new Intl.NumberFormat('fa-IR', {
@@ -107,6 +116,7 @@ export default function DashboardPage() {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [models, setModels] = useState<ModelRow[]>([]);
   const [sources, setSources] = useState<SourceRow[]>([]);
+  const [episodeCosts, setEpisodeCosts] = useState<EpisodeCostRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -118,14 +128,16 @@ export default function DashboardPage() {
     setLoading(true);
     setError(null);
     try {
-      const [dash, modelRes, sourceRes] = await Promise.all([
+      const [dash, modelRes, sourceRes, episodeRes] = await Promise.all([
         apiFetch<DashboardSummary>('/dashboard'),
         apiFetch<{ models: ModelRow[] }>('/reports/models?days=7'),
         apiFetch<{ sources: SourceRow[] }>('/reports/sources?days=7'),
+        apiFetch<{ episodes: EpisodeCostRow[] }>('/reports/episodes?days=30'),
       ]);
       setSummary(dash.data);
       setModels(modelRes.data?.models ?? []);
       setSources(sourceRes.data?.sources ?? []);
+      setEpisodeCosts(episodeRes.data?.episodes ?? []);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'خطا';
       setError(message);
@@ -291,6 +303,49 @@ export default function DashboardPage() {
                         <td className="px-3 py-2">
                           {m.errorRate === null ? '—' : fmtPct(m.errorRate * 100)}
                         </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section className="mt-8">
+            <h2 className="text-sm font-semibold text-fog/70">هزینه هر اپیزود (۳۰روز)</h2>
+            <div className="mt-2 overflow-x-auto rounded-xl border border-fog/10">
+              <table className="w-full min-w-[520px] text-right text-xs">
+                <thead className="bg-black/20 text-fog/50">
+                  <tr>
+                    <th className="px-3 py-2">اپیزود</th>
+                    <th className="px-3 py-2">وضعیت</th>
+                    <th className="px-3 py-2">درخواست</th>
+                    <th className="px-3 py-2">توکن</th>
+                    <th className="px-3 py-2">هزینه</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {episodeCosts.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-3 py-4 text-center text-fog/45">
+                        هنوز هزینهٔ اپیزود ثبت نشده — یک اسکریپت/صوت جدید بسازید
+                      </td>
+                    </tr>
+                  ) : (
+                    episodeCosts.map((ep) => (
+                      <tr key={ep.episodeId} className="border-t border-fog/10">
+                        <td className="px-3 py-2">
+                          <Link
+                            href={`/podcasts/${ep.episodeId}`}
+                            className="font-medium text-accent underline-offset-2 hover:underline"
+                          >
+                            {ep.title}
+                          </Link>
+                        </td>
+                        <td className="px-3 py-2">{ep.status ?? '—'}</td>
+                        <td className="px-3 py-2">{fmtNum(ep.requests)}</td>
+                        <td className="px-3 py-2">{fmtNum(ep.tokens)}</td>
+                        <td className="px-3 py-2">${fmtNum(ep.estimatedCost, 4)}</td>
                       </tr>
                     ))
                   )}

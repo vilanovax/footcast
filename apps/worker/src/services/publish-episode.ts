@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type { Database } from '@footcast/database';
+import { createNotification, type Database } from '@footcast/database';
 import type { Logger } from '@footcast/logger';
 import type { PublishEpisodeJobData } from '@footcast/queue';
 import { EpisodeStatus } from '@footcast/shared';
@@ -66,6 +66,16 @@ export async function processPublishEpisodeJob(
       publicationId,
       publishedAt: now.toISOString(),
     },
+  });
+
+  await createNotification(db, {
+    type: 'podcast.published',
+    title: 'اپیزود منتشر شد',
+    body: episode.getDataValue('title'),
+    entityType: 'PodcastEpisode',
+    entityId: data.episodeId,
+    href: `/podcasts/${data.episodeId}`,
+    metadata: { publicationId, audioUrl },
   });
 
   logger.info('Episode published', {

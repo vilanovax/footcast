@@ -58,6 +58,10 @@ Cost/token dashboards، source/model performance، acceptance rate، latency، �
 
 **پذیرش:** KPIهای اصلی در داشبورد قابل مشاهده
 
+## فاز نُه (پولیش): PWA + Notifications + Cost/Episode ← **انجام‌شده**
+
+Service worker / offline shell / install prompt، اعلان‌های درون‌برنامه‌ای (+ browser)، `related_episode_id` و هزینهٔ هر اپیزود در گزارش و صفحه پادکست
+
 ## پیشنهاد اجرای پرامپت
 
 1. این پرامپت → مستندات + فاز صفر  

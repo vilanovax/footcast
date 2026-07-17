@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { Op, type WhereOptions } from 'sequelize';
 import { randomUUID } from 'node:crypto';
-import type { Database } from '@footcast/database';
+import { createNotification, type Database } from '@footcast/database';
 import { scoreNewsEvent } from '@footcast/editorial-rules';
 import type { Queue, ScoreEventJobData } from '@footcast/queue';
 import { EventStatus } from '@footcast/shared';
@@ -298,6 +298,15 @@ export class EditorialService {
       before: { status: previous },
       after: { status: nextStatus, reason: reason ?? null },
       ip: null,
+    });
+    await createNotification(this.db, {
+      type: `editorial.${decision}`,
+      title: decision === 'approve' ? 'خبر تأیید شد' : 'خبر رد شد',
+      body: event.getDataValue('title'),
+      entityType: 'NewsEvent',
+      entityId: eventId,
+      href: `/inbox/${eventId}`,
+      metadata: { decision, actorUserId },
     });
     return {
       event: await this.getDetail(eventId),

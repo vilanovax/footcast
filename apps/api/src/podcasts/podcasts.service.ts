@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import { Op } from 'sequelize';
+import { Op, col, fn } from 'sequelize';
 import type { Database } from '@footcast/database';
 import type {
   GenerateAudioJobData,
@@ -84,7 +84,33 @@ export class PodcastsService {
       ],
     });
     if (!episode) throw new NotFoundException('Episode not found');
-    return episode.toJSON();
+    const cost = (await this.db.models.AiRequest.findOne({
+      attributes: [
+        [fn('COUNT', col('id')), 'requests'],
+        [fn('SUM', col('estimated_cost')), 'estimatedCost'],
+        [fn('SUM', col('input_tokens')), 'inputTokens'],
+        [fn('SUM', col('output_tokens')), 'outputTokens'],
+      ],
+      where: { relatedEpisodeId: id },
+      raw: true,
+    })) as {
+      requests?: string | number;
+      estimatedCost?: string | number;
+      inputTokens?: string | number;
+      outputTokens?: string | number;
+    } | null;
+
+    return {
+      ...episode.toJSON(),
+      costSummary: {
+        requests: Number(cost?.requests ?? 0),
+        estimatedCost: Number(cost?.estimatedCost ?? 0),
+        inputTokens: Number(cost?.inputTokens ?? 0),
+        outputTokens: Number(cost?.outputTokens ?? 0),
+        tokens:
+          Number(cost?.inputTokens ?? 0) + Number(cost?.outputTokens ?? 0),
+      },
+    };
   }
 
   async create(input: {
@@ -288,6 +314,7 @@ export class PodcastsService {
         EpisodeStatus.APPROVED,
         EpisodeStatus.SCRIPT_REVIEWED,
         EpisodeStatus.AUDIO_READY,
+        EpisodeStatus.PUBLISHED,
         EpisodeStatus.FAILED,
       ].includes(status as EpisodeStatus)
     ) {

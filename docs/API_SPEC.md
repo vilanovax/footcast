@@ -141,6 +141,11 @@ Auth: `Authorization: Bearer <access_token>`
 /reports/models
 /reports/sources
 /reports/editorial
+/reports/episodes
+/notifications
+/notifications/unread-count
+/notifications/read-all
+/notifications/:id/read
 /ai/usage?days=
 /settings
 /health

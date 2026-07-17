@@ -210,6 +210,7 @@ export interface AiRequestAttrs {
   pipelineStage: string;
   promptVersionId: string | null;
   relatedArticleId: string | null;
+  relatedEpisodeId: string | null;
   inputTokens: number;
   outputTokens: number;
   cachedInputTokens: number;
@@ -219,6 +220,20 @@ export interface AiRequestAttrs {
   latencyMs: number;
   status: string;
   error: string | null;
+  metadata: Record<string, unknown> | null;
+  createdAt?: Date;
+}
+
+export interface NotificationAttrs {
+  id: string;
+  userId: string | null;
+  type: string;
+  title: string;
+  body: string | null;
+  entityType: string | null;
+  entityId: string | null;
+  href: string | null;
+  readAt: Date | null;
   metadata: Record<string, unknown> | null;
   createdAt?: Date;
 }

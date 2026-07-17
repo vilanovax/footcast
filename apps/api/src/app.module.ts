@@ -15,6 +15,7 @@ import { EventsModule } from './events/events.module.js';
 import { EditorialModule } from './editorial/editorial.module.js';
 import { PodcastsModule } from './podcasts/podcasts.module.js';
 import { ReportsModule } from './reports/reports.module.js';
+import { NotificationsModule } from './notifications/notifications.module.js';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { ReportsModule } from './reports/reports.module.js';
     EditorialModule,
     PodcastsModule,
     ReportsModule,
+    NotificationsModule,
   ],
 })
 export class AppModule {}

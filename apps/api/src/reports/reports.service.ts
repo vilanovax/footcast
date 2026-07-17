@@ -198,6 +198,62 @@ export class ReportsService {
     };
   }
 
+  async episodeCosts(days = 30) {
+    const since = daysAgo(days);
+    const rows = (await this.db.models.AiRequest.findAll({
+      attributes: [
+        'relatedEpisodeId',
+        [fn('COUNT', col('AiRequest.id')), 'requests'],
+        [fn('SUM', col('AiRequest.input_tokens')), 'inputTokens'],
+        [fn('SUM', col('AiRequest.output_tokens')), 'outputTokens'],
+        [fn('SUM', col('AiRequest.estimated_cost')), 'estimatedCost'],
+        [fn('AVG', col('AiRequest.latency_ms')), 'avgLatencyMs'],
+      ],
+      where: {
+        relatedEpisodeId: { [Op.ne]: null },
+        createdAt: { [Op.gte]: since },
+      },
+      group: ['relatedEpisodeId'],
+      order: [[literal('"estimatedCost"'), 'DESC NULLS LAST']],
+      raw: true,
+    })) as unknown as Array<Record<string, unknown>>;
+
+    const episodeIds = rows.map((row) => String(row.relatedEpisodeId)).filter(Boolean);
+    const episodes = episodeIds.length
+      ? await this.db.models.PodcastEpisode.findAll({
+          where: { id: { [Op.in]: episodeIds } },
+          attributes: ['id', 'title', 'status', 'slug'],
+        })
+      : [];
+    const byId = new Map(
+      episodes.map((ep) => [ep.getDataValue('id'), ep.toJSON()]),
+    );
+
+    return {
+      days,
+      episodes: rows.map((row) => {
+        const episodeId = String(row.relatedEpisodeId);
+        const ep = byId.get(episodeId) as
+          | { title?: string; status?: string; slug?: string }
+          | undefined;
+        const inputTokens = Number(row.inputTokens ?? 0);
+        const outputTokens = Number(row.outputTokens ?? 0);
+        return {
+          episodeId,
+          title: ep?.title ?? episodeId,
+          status: ep?.status ?? null,
+          slug: ep?.slug ?? null,
+          requests: Number(row.requests ?? 0),
+          inputTokens,
+          outputTokens,
+          tokens: sumTokens({ inputTokens, outputTokens }),
+          estimatedCost: roundMetric(Number(row.estimatedCost ?? 0), 6) ?? 0,
+          avgLatencyMs: roundMetric(Number(row.avgLatencyMs ?? 0) || null, 1),
+        };
+      }),
+    };
+  }
+
   async editorialAcceptance(days = 7) {
     const since = daysAgo(days);
     const rows = (await this.db.models.EditorialDecision.findAll({

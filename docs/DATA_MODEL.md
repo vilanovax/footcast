@@ -84,6 +84,14 @@
 ### podcast_publications
 انتشار اپیزود: `audioId`, `title`, `description`, `audioUrl`, `guid` یکتا، `publishedAt`, `rssMetadata` JSONB.
 
+## جداول فاز ۹ — Notifications + Episode Cost
+
+### notifications
+اعلان سردبیری/پادکست: `userId` (nullable=broadcast)، `type`, `title`, `body`, `entityType/Id`, `href`, `readAt`.
+
+### ai_requests.related_episode_id
+لینک هزینه/توکن به `podcast_episodes` برای cost-per-episode.
+
 ## کاتالوگ کامل Entityها
 
 User, Role, Permission, Source, SourceFeed, SourceRule, SourceHealth, CrawlRun, CrawlError, RawArticle, ArticleContent, ArticleExtraction, ArticleEntity, ArticleClaim, ArticleMetric, NewsEvent, NewsEventArticle, NewsEventEntity, NewsEventClaim, NewsEventConflict, NewsEventTimeline, Club, League, Competition, Country, Person, Match, Season, EditorialRule, EditorialScore, EditorialDecision, EditorialNote, PodcastEpisode, PodcastEpisodeItem, PodcastScript, PodcastScriptVersion, PodcastAudio, PodcastPublication, AIProvider, AIModel, AIPipeline, AIRequest, AIUsage, AICost, PromptTemplate, PromptVersion, Job, JobRun, JobError, Notification, AuditLog, AppSetting, FeatureFlag

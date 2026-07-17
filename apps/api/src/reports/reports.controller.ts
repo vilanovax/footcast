@@ -46,4 +46,10 @@ export class ReportsController {
   editorial(@Query() query: DaysQueryDto) {
     return this.reportsService.editorialAcceptance(query.days ?? 7);
   }
+
+  @Get('episodes')
+  @RequirePermissions('dashboard:read')
+  episodes(@Query() query: DaysQueryDto) {
+    return this.reportsService.episodeCosts(query.days ?? 30);
+  }
 }

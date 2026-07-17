@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import type { Database } from '@footcast/database';
+import { createNotification, type Database } from '@footcast/database';
 import type { Logger } from '@footcast/logger';
 import type { GenerateAudioJobData } from '@footcast/queue';
 import { EpisodeStatus } from '@footcast/shared';
@@ -55,6 +55,33 @@ export async function processGenerateAudioJob(
 
     const publicUrl = `${publicApiBase()}/podcasts/${data.episodeId}/audio/file`;
 
+    const chars = script.getDataValue('bodyMd').length;
+    const estimatedCost = Number((Math.max(chars, 1) * 0.000015).toFixed(6));
+    await db.models.AiRequest.create({
+      id: randomUUID(),
+      provider: result.provider,
+      model: result.model,
+      pipelineStage: 'podcast_tts',
+      promptVersionId: null,
+      relatedArticleId: null,
+      relatedEpisodeId: data.episodeId,
+      inputTokens: Math.round(chars / 4),
+      outputTokens: 0,
+      cachedInputTokens: 0,
+      reasoningTokens: 0,
+      estimatedCost: result.provider === 'mock' ? 0 : estimatedCost,
+      actualCost: result.provider === 'mock' ? 0 : estimatedCost,
+      latencyMs: 0,
+      status: 'success',
+      error: null,
+      metadata: {
+        audioId,
+        voiceId: result.voiceId,
+        durationSec: result.durationSec,
+        reportedDurationSec: result.reportedDurationSec,
+      },
+    });
+
     await db.models.PodcastAudio.create({
       id: audioId,
       episodeId: data.episodeId,
@@ -72,6 +99,7 @@ export async function processGenerateAudioJob(
       metadata: {
         sampleRate: result.sampleRate,
         reason: data.reason ?? 'manual',
+        estimatedCost: result.provider === 'mock' ? 0 : estimatedCost,
       },
     });
 
@@ -82,6 +110,16 @@ export async function processGenerateAudioJob(
         latestAudioId: audioId,
         audioPublicUrl: publicUrl,
       },
+    });
+
+    await createNotification(db, {
+      type: 'podcast.audio_ready',
+      title: 'صوت اپیزود آماده شد',
+      body: episode.getDataValue('title'),
+      entityType: 'PodcastEpisode',
+      entityId: data.episodeId,
+      href: `/podcasts/${data.episodeId}`,
+      metadata: { audioId },
     });
 
     logger.info('Podcast audio generated', {

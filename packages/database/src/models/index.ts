@@ -31,6 +31,7 @@ import type {
   NewsEventArticleAttrs,
   NewsEventAttrs,
   NewsEventConflictAttrs,
+  NotificationAttrs,
   PodcastAudioAttrs,
   PodcastEpisodeAttrs,
   PodcastEpisodeItemAttrs,
@@ -78,6 +79,7 @@ export type DbModels = {
   PodcastScriptVersion: ModelStatic<Model<PodcastScriptVersionAttrs>>;
   PodcastAudio: ModelStatic<Model<PodcastAudioAttrs>>;
   PodcastPublication: ModelStatic<Model<PodcastPublicationAttrs>>;
+  Notification: ModelStatic<Model<NotificationAttrs>>;
   AppSetting: ModelStatic<Model<AppSettingAttrs>>;
   AuditLog: ModelStatic<Model<AuditLogAttrs>>;
   RefreshToken: ModelStatic<Model<RefreshTokenAttrs>>;
@@ -374,6 +376,7 @@ export function initModels(sequelize: Sequelize): DbModels {
       pipelineStage: { type: DataTypes.STRING(64), allowNull: false },
       promptVersionId: { type: DataTypes.UUID, allowNull: true },
       relatedArticleId: { type: DataTypes.UUID, allowNull: true },
+      relatedEpisodeId: { type: DataTypes.UUID, allowNull: true },
       inputTokens: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
       outputTokens: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
       cachedInputTokens: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
@@ -628,6 +631,23 @@ export function initModels(sequelize: Sequelize): DbModels {
     { tableName: 'podcast_publications', underscored: true },
   );
 
+  const Notification = sequelize.define<Model<NotificationAttrs>>(
+    'Notification',
+    {
+      id: { type: DataTypes.UUID, primaryKey: true },
+      userId: { type: DataTypes.UUID, allowNull: true },
+      type: { type: DataTypes.STRING(64), allowNull: false },
+      title: { type: DataTypes.STRING(255), allowNull: false },
+      body: { type: DataTypes.TEXT, allowNull: true },
+      entityType: { type: DataTypes.STRING(64), allowNull: true },
+      entityId: { type: DataTypes.STRING(64), allowNull: true },
+      href: { type: DataTypes.STRING(500), allowNull: true },
+      readAt: { type: DataTypes.DATE, allowNull: true },
+      metadata: { type: DataTypes.JSONB, allowNull: true },
+    },
+    { tableName: 'notifications', underscored: true, updatedAt: false },
+  );
+
   User.belongsToMany(Role, {
     through: UserRole,
     foreignKey: 'userId',
@@ -688,6 +708,10 @@ export function initModels(sequelize: Sequelize): DbModels {
   PodcastEpisode.hasOne(PodcastPublication, { foreignKey: 'episodeId', as: 'publication' });
   PodcastPublication.belongsTo(PodcastEpisode, { foreignKey: 'episodeId', as: 'episode' });
   PodcastPublication.belongsTo(PodcastAudio, { foreignKey: 'audioId', as: 'audio' });
+  PodcastEpisode.hasMany(AiRequest, { foreignKey: 'relatedEpisodeId', as: 'aiRequests' });
+  AiRequest.belongsTo(PodcastEpisode, { foreignKey: 'relatedEpisodeId', as: 'episode' });
+  User.hasMany(Notification, { foreignKey: 'userId', as: 'notifications' });
+  Notification.belongsTo(User, { foreignKey: 'userId', as: 'user' });
   PromptTemplate.hasMany(PromptVersion, { foreignKey: 'templateId', as: 'versions' });
   PromptVersion.belongsTo(PromptTemplate, { foreignKey: 'templateId', as: 'template' });
   Source.hasMany(CrawlRun, { foreignKey: 'sourceId', as: 'crawlRuns' });
@@ -727,6 +751,7 @@ export function initModels(sequelize: Sequelize): DbModels {
     PodcastScriptVersion,
     PodcastAudio,
     PodcastPublication,
+    Notification,
     AppSetting,
     AuditLog,
     RefreshToken,

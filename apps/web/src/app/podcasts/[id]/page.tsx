@@ -40,6 +40,13 @@ type EpisodeDetail = {
     publishedAt: string;
     guid: string;
   } | null;
+  costSummary?: {
+    requests: number;
+    estimatedCost: number;
+    inputTokens: number;
+    outputTokens: number;
+    tokens: number;
+  };
 };
 
 async function pollUntil(
@@ -209,6 +216,13 @@ export default function PodcastDetailPage() {
           <h1 className="mt-4 font-display text-xl font-bold">{episode.title}</h1>
           <p className="mt-1 text-xs text-fog/55">
             {episode.status} · هدف {episode.targetDurationMin} دقیقه
+            {episode.costSummary ? (
+              <>
+                {' '}
+                · هزینه ~${episode.costSummary.estimatedCost.toFixed(4)} ·{' '}
+                {episode.costSummary.tokens} توکن
+              </>
+            ) : null}
           </p>
 
           <section className="mt-6">
