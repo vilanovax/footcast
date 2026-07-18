@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { apiFetch, clearTokens, getToken } from '../../lib/api';
 import {
   eventStatusTone,
@@ -16,6 +16,7 @@ import { StatusBadge } from '../../components/StatusBadge';
 import { CoveragePanel } from '../../components/CoveragePanel';
 import { WorkflowGuide } from '../../components/WorkflowGuide';
 import { EmptyState, PageHeader, SkeletonList } from '../../components/ui';
+import { inboxAutomationBadges } from '../../lib/automation-ui';
 
 type SourceOption = { id: string; name: string };
 
@@ -35,6 +36,7 @@ type InboxItem = {
   articleCount?: number;
   independentSourceCount?: number;
   latestDevelopmentSummary?: string | null;
+  metadata?: Record<string, unknown> | null;
   latestScore?: {
     finalScore?: number;
     credibilityScore?: number;
@@ -53,9 +55,12 @@ type BulkResult = {
 const SELECT_CLASS =
   'w-full appearance-none rounded-xl border border-fog/12 bg-black/25 px-3 py-2.5 text-xs text-fog/90 outline-none transition focus:border-accent/45';
 
-function initialQuery(key: string, fallback = ''): string {
-  if (typeof window === 'undefined') return fallback;
-  return new URLSearchParams(window.location.search).get(key) ?? fallback;
+function paramOr(
+  sp: { get(name: string): string | null },
+  key: string,
+  fallback = '',
+): string {
+  return sp.get(key) ?? fallback;
 }
 
 function isPlaceholderSummary(text?: string | null): boolean {
@@ -64,19 +69,42 @@ function isPlaceholderSummary(text?: string | null): boolean {
 }
 
 export default function InboxPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="mx-auto min-h-screen max-w-3xl px-4 py-6" dir="rtl">
+          <SkeletonList rows={6} />
+        </main>
+      }
+    >
+      <InboxPageInner />
+    </Suspense>
+  );
+}
+
+function InboxPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [items, setItems] = useState<InboxItem[]>([]);
   const [sources, setSources] = useState<SourceOption[]>([]);
   const [total, setTotal] = useState(0);
-  const [q, setQ] = useState(() => initialQuery('q'));
-  const [status, setStatus] = useState(() => initialQuery('status', 'NEEDS_REVIEW'));
-  const [category, setCategory] = useState(() => initialQuery('category'));
-  const [scope, setScope] = useState(() => initialQuery('scope'));
-  const [sourceId, setSourceId] = useState(() => initialQuery('sourceId'));
-  const [minFinalScore, setMinFinalScore] = useState(() => initialQuery('minFinalScore'));
-  const [recommendation, setRecommendation] = useState(() =>
-    initialQuery('recommendation'),
+  const [q, setQ] = useState(() => paramOr(searchParams, 'q'));
+  const [status, setStatus] = useState(() =>
+    paramOr(searchParams, 'status', 'NEEDS_REVIEW'),
   );
+  const [category, setCategory] = useState(() => paramOr(searchParams, 'category'));
+  const [scope, setScope] = useState(() => paramOr(searchParams, 'scope'));
+  const [sourceId, setSourceId] = useState(() => paramOr(searchParams, 'sourceId'));
+  const [minFinalScore, setMinFinalScore] = useState(() =>
+    paramOr(searchParams, 'minFinalScore'),
+  );
+  const [recommendation, setRecommendation] = useState(() =>
+    paramOr(searchParams, 'recommendation'),
+  );
+  const [automation, setAutomation] = useState(() =>
+    paramOr(searchParams, 'automation'),
+  );
+  const [todayIds, setTodayIds] = useState<Set<string>>(new Set());
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
   const [crawling, setCrawling] = useState(false);
@@ -135,8 +163,30 @@ export default function InboxPage() {
         clear: () => setRecommendation(''),
       });
     }
+    if (automation === 'important') {
+      chips.push({
+        key: 'auto',
+        label: 'خبرهای مهم',
+        clear: () => setAutomation(''),
+      });
+    } else if (automation === 'suggested') {
+      chips.push({
+        key: 'auto',
+        label: 'پیشنهاد سیستم',
+        clear: () => setAutomation(''),
+      });
+    }
     return chips;
-  }, [status, category, scope, sourceId, minFinalScore, recommendation, sources]);
+  }, [
+    status,
+    category,
+    scope,
+    sourceId,
+    minFinalScore,
+    recommendation,
+    automation,
+    sources,
+  ]);
 
   const load = useCallback(async () => {
     if (!getToken()) {
@@ -156,9 +206,16 @@ export default function InboxPage() {
       if (sourceId) params.set('sourceId', sourceId);
       if (minFinalScore) params.set('minFinalScore', minFinalScore);
       if (recommendation) params.set('recommendation', recommendation);
-      const res = await apiFetch<InboxItem[]>(`/editorial/inbox?${params}`);
+      if (automation) params.set('automation', automation);
+      const [res, todayRes] = await Promise.all([
+        apiFetch<InboxItem[]>(`/editorial/inbox?${params}`),
+        apiFetch<{ eventIds?: string[] }>('/rundown/today/event-ids').catch(
+          () => ({ data: { eventIds: [] as string[] } }),
+        ),
+      ]);
       setItems(res.data ?? []);
       setTotal(res.meta?.total ?? res.data?.length ?? 0);
+      setTodayIds(new Set(todayRes.data?.eventIds ?? []));
       setSelected(new Set());
       setToolsOpen(false);
 
@@ -188,6 +245,7 @@ export default function InboxPage() {
     sourceId,
     minFinalScore,
     recommendation,
+    automation,
     coverageFilterIds,
     router,
   ]);
@@ -241,6 +299,7 @@ export default function InboxPage() {
     setSourceId('');
     setMinFinalScore('');
     setRecommendation('');
+    setAutomation('');
     setStatus('NEEDS_REVIEW');
     setQ('');
   }
@@ -524,6 +583,18 @@ export default function InboxPage() {
                   <option value="REJECT_OR_ARCHIVE">رد / بایگانی</option>
                 </select>
               </label>
+              <label className="block space-y-1">
+                <span className="text-[10px] text-fog/40">اتوماسیون</span>
+                <select
+                  value={automation}
+                  onChange={(e) => setAutomation(e.target.value)}
+                  className={SELECT_CLASS}
+                >
+                  <option value="">همه</option>
+                  <option value="important">خبرهای مهم</option>
+                  <option value="suggested">پیشنهاد سیستم</option>
+                </select>
+              </label>
             </div>
             <div className="flex justify-between pt-1">
               <button
@@ -688,10 +759,17 @@ export default function InboxPage() {
                           tone={eventStatusTone(item.status)}
                         />
                         <StatusBadge label={labelCategory(item.category)} tone="accent" />
-                        {rec === 'REJECT_OR_ARCHIVE' || rec === 'LEAD_STORY' ? (
+                        {inboxAutomationBadges({
+                          recommendation: rec,
+                          metadata: item.metadata,
+                          inToday: todayIds.has(item.id),
+                        }).map((b) => (
+                          <StatusBadge key={b.key} label={b.label} tone={b.tone} />
+                        ))}
+                        {rec === 'REJECT_OR_ARCHIVE' ? (
                           <StatusBadge
                             label={labelRecommendation(rec)}
-                            tone={rec === 'LEAD_STORY' ? 'ok' : 'warn'}
+                            tone="warn"
                           />
                         ) : null}
                       </div>

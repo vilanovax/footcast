@@ -458,6 +458,13 @@ export class RundownService {
       isLeadStory: section === RundownSection.LEAD,
       isPinned: false,
       editorNote: null,
+      addedMode: 'MANUAL',
+      automationDecisionId: null,
+      reviewStatus: null,
+      reviewedBy: null,
+      reviewedAt: null,
+      automationReason: null,
+      scoreSnapshot: null,
     });
 
     await this.db.models.AuditLog.create({
@@ -486,6 +493,7 @@ export class RundownService {
       editorialPriority?: number;
       editorNote?: string;
       estimatedDurationSeconds?: number;
+      reviewStatus?: 'PENDING_REVIEW' | 'ACCEPTED' | 'DISMISSED';
     },
   ) {
     const item = await this.db.models.DailyRundownItem.findByPk(itemId);
@@ -517,6 +525,16 @@ export class RundownService {
     if (patch.estimatedDurationSeconds != null) {
       updates.estimatedDurationSeconds = patch.estimatedDurationSeconds;
     }
+    if (patch.reviewStatus != null) {
+      updates.reviewStatus = patch.reviewStatus;
+      updates.reviewedBy = userId;
+      updates.reviewedAt = new Date();
+      if (patch.reviewStatus === 'DISMISSED') {
+        updates.status = RundownItemStatus.REMOVED;
+        updates.removedAt = new Date();
+        updates.removalReason = 'automation_dismissed';
+      }
+    }
 
     if (patch.isLeadStory) {
       await this.db.models.DailyRundownItem.update(
@@ -532,6 +550,19 @@ export class RundownService {
 
     const before = item.toJSON();
     await item.update(updates);
+
+    if (patch.reviewStatus === 'DISMISSED') {
+      const decisionId = item.getDataValue('automationDecisionId') as
+        | string
+        | null;
+      if (decisionId) {
+        await this.db.models.EditorialAutomationDecision.update(
+          { revertedAt: new Date(), revertedBy: userId },
+          { where: { id: decisionId } },
+        );
+      }
+    }
+
     await this.db.models.AuditLog.create({
       id: randomUUID(),
       actorUserId: userId,
@@ -542,6 +573,64 @@ export class RundownService {
       after: item.toJSON(),
       ip: null,
     });
+    return this.getRundownDetail(item.getDataValue('rundownId'));
+  }
+
+  /**
+   * Undo an AUTO-added rundown item: remove item + mark automation decision reverted.
+   */
+  async undoAutoAdd(itemId: string, userId: string, reason?: string) {
+    const item = await this.db.models.DailyRundownItem.findByPk(itemId);
+    if (!item) throw new NotFoundException('Rundown item not found');
+
+    const addedMode = item.getDataValue('addedMode') as string | null;
+    if (addedMode !== 'AUTO') {
+      throw new BadRequestException('Only AUTO-added items can be undone via this endpoint');
+    }
+
+    const rundown = await this.db.models.DailyRundown.findByPk(
+      item.getDataValue('rundownId'),
+    );
+    if (!rundown) throw new NotFoundException('Rundown not found');
+    this.assertEditable(rundown.getDataValue('status'));
+
+    const decisionId = item.getDataValue('automationDecisionId') as string | null;
+    const before = item.toJSON();
+    const now = new Date();
+
+    await item.update({
+      status: RundownItemStatus.REMOVED,
+      removedAt: now,
+      removalReason: reason?.trim() || 'automation_undone_by_editor',
+      reviewStatus: 'DISMISSED',
+      reviewedAt: now,
+      reviewedBy: userId,
+    });
+
+    if (decisionId) {
+      await this.db.models.EditorialAutomationDecision.update(
+        {
+          revertedAt: now,
+          revertedBy: userId,
+        },
+        { where: { id: decisionId } },
+      );
+    }
+
+    await this.db.models.AuditLog.create({
+      id: randomUUID(),
+      actorUserId: userId,
+      action: 'rundown.undo_auto_add',
+      entityType: 'DailyRundownItem',
+      entityId: itemId,
+      before,
+      after: {
+        reason: reason?.trim() || 'automation_undone_by_editor',
+        automationDecisionId: decisionId,
+      },
+      ip: null,
+    });
+
     return this.getRundownDetail(item.getDataValue('rundownId'));
   }
 

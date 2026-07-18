@@ -45,6 +45,8 @@ export interface InboxFilters {
   minFinalScore?: number;
   minCredibilityScore?: number;
   recommendation?: string;
+  /** important | suggested — filters automation / recommendation hints */
+  automation?: string;
   sourceId?: string;
   hasManualOverride?: boolean;
   q?: string;
@@ -133,6 +135,21 @@ export class EditorialService {
           ),
         },
       });
+    }
+    if (filters.automation === 'important') {
+      andParts.push(
+        this.db.sequelize.literal(`(
+          "NewsEvent".recommendation IN ('LEAD_STORY','INCLUDE_IN_MAIN_PODCAST','INCLUDE_AS_BRIEF')
+          OR ("NewsEvent".metadata->'lastAutomation'->>'highlightBadge')
+            IN ('LEAD','IMPORTANT','RUNDOWN_CANDIDATE')
+        )`) as unknown as WhereOptions,
+      );
+    } else if (filters.automation === 'suggested') {
+      andParts.push(
+        this.db.sequelize.literal(`(
+          ("NewsEvent".metadata->'lastAutomation'->>'suggestKind') IN ('ADD','REPLACE')
+        )`) as unknown as WhereOptions,
+      );
     }
     // Avoid Sequelize distinct+join bug ("missing FROM-clause … NewsEvent->NewsEvent")
     if (filters.sourceId) {

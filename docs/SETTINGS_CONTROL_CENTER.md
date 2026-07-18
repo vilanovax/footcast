@@ -12,6 +12,7 @@
 ├── Promptها
 ├── ممیزی هوش مصنوعی             (Admin)
 ├── قواعد سردبیری
+├── اتوماسیون انتخاب خبر
 ├── وزن تیم‌ها و لیگ‌ها
 ├── اهداف پوشش
 ├── زمان‌بندی موج‌ها
@@ -38,6 +39,7 @@
 | `control.ai.pipeline` | نگاشت مرحله → مدل |
 | `control.ai.audit_policies` | سیاست ممیزی |
 | `control.editorial.rules` | آستانه‌های سردبیری |
+| `control.editorial.automation` | Policy اتوماسیون انتخاب (ADR-007) |
 | `control.scheduling` | موج‌ها + قفل |
 | `control.cost` | بودجه |
 | `control.quality` | کیفیت |

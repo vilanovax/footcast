@@ -34,6 +34,7 @@ export const SETTINGS_NAV_GROUPS: SettingsNavGroup[] = [
     label: 'سردبیری',
     items: [
       { id: 'editorial', label: 'قواعد', editorVisible: true },
+      { id: 'automation', label: 'اتوماسیون', editorVisible: true },
       { id: 'weights', label: 'وزن‌ها', editorVisible: true },
       { id: 'coverage', label: 'پوشش', editorVisible: true },
       { id: 'scheduling', label: 'زمان‌بندی', editorVisible: true },

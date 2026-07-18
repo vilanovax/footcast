@@ -213,6 +213,9 @@ importers:
       '@footcast/database':
         specifier: workspace:*
         version: link:../../packages/database
+      '@footcast/editorial-automation':
+        specifier: workspace:*
+        version: link:../../packages/editorial-automation
       '@footcast/editorial-rules':
         specifier: workspace:*
         version: link:../../packages/editorial-rules
@@ -338,6 +341,19 @@ importers:
       sequelize-cli:
         specifier: ^6.6.2
         version: 6.6.5
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+
+  packages/editorial-automation:
+    dependencies:
+      '@footcast/shared':
+        specifier: workspace:*
+        version: link:../shared
+    devDependencies:
+      tsx:
+        specifier: ^4.19.2
+        version: 4.23.1
       typescript:
         specifier: ^5.7.3
         version: 5.9.3

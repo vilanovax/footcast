@@ -1,5 +1,57 @@
 import { NewsCategory, OfficialStatus, assessFootballRelevance } from '@footcast/shared';
+import {
+  AUTO_ADD_AI_AUDIT_STAGE,
+  mockDecideAutoAddAudit,
+  type AutoAddAiAuditInput,
+} from './auto-add-audit.js';
 import type { AiCompletionRequest, AiCompletionResult, AiProvider } from './types.js';
+
+function parseAutoAddAuditPrompt(userPrompt: string): AutoAddAiAuditInput {
+  const grab = (label: string): string => {
+    const m = userPrompt.match(new RegExp(`${label}:\\s*(.+)`));
+    return (m?.[1] ?? '').trim();
+  };
+  const scores = grab('Scores');
+  const sourcesLine = grab('Sources');
+  const flags = grab('Flags');
+  const finalM = scores.match(/final=([^\s]+)/);
+  const effM = scores.match(/effective=([^\s]+)/);
+  const credM = scores.match(/credibility=([^\s]+)/);
+  const indM = sourcesLine.match(/independent=(\d+)/);
+  const maxCredM = sourcesLine.match(/maxCredibility=([^\s]+)/);
+  const typesM = sourcesLine.match(/types=(.+)/);
+  const conflict = /majorConflict=true/.test(flags);
+  const dup = /nearDuplicate=true/.test(flags);
+  const num = (raw: string | undefined): number | null => {
+    if (!raw || raw === 'n/a') return null;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : null;
+  };
+  return {
+    newsEventId: grab('Event ID') || '00000000-0000-0000-0000-000000000000',
+    title: grab('Title') || 'خبر',
+    summary: grab('Summary'),
+    status: grab('Status') || 'NEEDS_REVIEW',
+    officialStatus: grab('OfficialStatus') || 'UNVERIFIED',
+    recommendation: grab('Recommendation') || null,
+    category: grab('Category') || null,
+    finalScore: num(finalM?.[1]),
+    effectiveFinalScore: num(effM?.[1]),
+    credibilityScore: num(credM?.[1]),
+    independentSourceCount: Number(indM?.[1] ?? 0),
+    maxSourceCredibility: Number(maxCredM?.[1] ?? 50),
+    sourceTypes:
+      typesM?.[1] && typesM[1] !== 'n/a'
+        ? typesM[1].split(',').map((s) => s.trim()).filter(Boolean)
+        : [],
+    hasMajorConflict: conflict,
+    isExactOrNearDuplicate: dup,
+    teamKeys:
+      grab('Teams') && grab('Teams') !== 'n/a'
+        ? grab('Teams').split(',').map((s) => s.trim()).filter(Boolean)
+        : [],
+  };
+}
 
 function guessCategory(text: string): NewsCategory {
   const t = text.toLowerCase();
@@ -40,6 +92,23 @@ export class MockAiProvider implements AiProvider {
 
   async complete(request: AiCompletionRequest): Promise<AiCompletionResult> {
     const started = Date.now();
+
+    if (request.pipelineStage === AUTO_ADD_AI_AUDIT_STAGE) {
+      const input = parseAutoAddAuditPrompt(request.userPrompt);
+      const payload = mockDecideAutoAddAudit(input);
+      return {
+        content: JSON.stringify(payload),
+        parsed: payload,
+        usage: {
+          inputTokens: Math.max(40, Math.round(request.userPrompt.length / 4)),
+          outputTokens: Math.max(20, Math.round(JSON.stringify(payload).length / 4)),
+        },
+        latencyMs: Date.now() - started,
+        provider: this.name,
+        model: 'mock-auto-add-audit-v1',
+      };
+    }
+
     const { title, body } = extractTitleAndBody(request.userPrompt);
     const articleId =
       request.metadata?.articleId ?? '00000000-0000-0000-0000-000000000000';

@@ -23,7 +23,10 @@
 
 - `NewsEvent.APPROVED` = خبر معتبر است
 - `DailyRundownItem.SHORTLISTED` = برای پادکست **امروز** نگه داشته شده
+- `DailyRundownItem.addedMode=AUTO` = ورود خودکار با Policy (ADR-007)؛ هنوز `FINAL_SELECTED` نیست
 - اپیزود پادکست از سبد قفل‌شده ساخته می‌شود (نه از کل APPROVED)
+
+اتوماسیون انتخاب: [AUTO_EDITORIAL_SELECTION.md](./AUTO_EDITORIAL_SELECTION.md)
 
 ## API
 

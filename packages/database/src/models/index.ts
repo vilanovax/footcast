@@ -38,6 +38,7 @@ import type {
   CoverageTargetAttrs,
   DailyRundownAttrs,
   DailyRundownItemAttrs,
+  EditorialAutomationDecisionAttrs,
   EditorialEntityWeightAttrs,
   EditorialTeamAttrs,
   IntakeWaveAttrs,
@@ -107,6 +108,7 @@ export type DbModels = {
   WaveEventObservation: ModelStatic<Model<WaveEventObservationAttrs>>;
   DailyRundown: ModelStatic<Model<DailyRundownAttrs>>;
   DailyRundownItem: ModelStatic<Model<DailyRundownItemAttrs>>;
+  EditorialAutomationDecision: ModelStatic<Model<EditorialAutomationDecisionAttrs>>;
   EditorialTeam: ModelStatic<Model<EditorialTeamAttrs>>;
   Competition: ModelStatic<Model<CompetitionAttrs>>;
   TrackedEvent: ModelStatic<Model<TrackedEventAttrs>>;
@@ -1020,8 +1022,56 @@ export function initModels(sequelize: Sequelize): DbModels {
         defaultValue: false,
       },
       editorNote: { type: DataTypes.TEXT, allowNull: true },
+      addedMode: {
+        type: DataTypes.STRING(32),
+        allowNull: false,
+        defaultValue: 'MANUAL',
+      },
+      automationDecisionId: { type: DataTypes.UUID, allowNull: true },
+      reviewStatus: { type: DataTypes.STRING(32), allowNull: true },
+      reviewedBy: { type: DataTypes.UUID, allowNull: true },
+      reviewedAt: { type: DataTypes.DATE, allowNull: true },
+      automationReason: { type: DataTypes.TEXT, allowNull: true },
+      scoreSnapshot: { type: DataTypes.JSONB, allowNull: true },
     },
     { tableName: 'daily_rundown_items', underscored: true },
+  );
+
+  const EditorialAutomationDecision = sequelize.define<
+    Model<EditorialAutomationDecisionAttrs>
+  >(
+    'EditorialAutomationDecision',
+    {
+      id: { type: DataTypes.UUID, primaryKey: true },
+      newsEventId: { type: DataTypes.UUID, allowNull: false },
+      rundownId: { type: DataTypes.UUID, allowNull: true },
+      rundownItemId: { type: DataTypes.UUID, allowNull: true },
+      decisionType: { type: DataTypes.STRING(32), allowNull: false },
+      policyVersion: { type: DataTypes.STRING(32), allowNull: false },
+      profileMode: { type: DataTypes.STRING(32), allowNull: false },
+      scoreSnapshot: { type: DataTypes.JSONB, allowNull: true },
+      coverageSnapshot: { type: DataTypes.JSONB, allowNull: true },
+      reasons: { type: DataTypes.JSONB, allowNull: false, defaultValue: [] },
+      blockedReasons: {
+        type: DataTypes.JSONB,
+        allowNull: false,
+        defaultValue: [],
+      },
+      executed: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      executedAt: { type: DataTypes.DATE, allowNull: true },
+      revertedAt: { type: DataTypes.DATE, allowNull: true },
+      revertedBy: { type: DataTypes.UUID, allowNull: true },
+      createdAt: { type: DataTypes.DATE, allowNull: false },
+    },
+    {
+      tableName: 'editorial_automation_decisions',
+      underscored: true,
+      updatedAt: false,
+    },
   );
 
   IntakeWave.hasMany(WaveEventObservation, {
@@ -1051,6 +1101,26 @@ export function initModels(sequelize: Sequelize): DbModels {
   DailyRundownItem.belongsTo(NewsEvent, {
     foreignKey: 'newsEventId',
     as: 'event',
+  });
+  DailyRundownItem.belongsTo(EditorialAutomationDecision, {
+    foreignKey: 'automationDecisionId',
+    as: 'automationDecision',
+  });
+  EditorialAutomationDecision.belongsTo(NewsEvent, {
+    foreignKey: 'newsEventId',
+    as: 'event',
+  });
+  EditorialAutomationDecision.belongsTo(DailyRundown, {
+    foreignKey: 'rundownId',
+    as: 'rundown',
+  });
+  EditorialAutomationDecision.belongsTo(DailyRundownItem, {
+    foreignKey: 'rundownItemId',
+    as: 'rundownItem',
+  });
+  NewsEvent.hasMany(EditorialAutomationDecision, {
+    foreignKey: 'newsEventId',
+    as: 'automationDecisions',
   });
   NewsEvent.hasMany(DailyRundownItem, {
     foreignKey: 'newsEventId',
@@ -1299,6 +1369,7 @@ export function initModels(sequelize: Sequelize): DbModels {
     WaveEventObservation,
     DailyRundown,
     DailyRundownItem,
+    EditorialAutomationDecision,
     EditorialTeam,
     Competition,
     TrackedEvent,

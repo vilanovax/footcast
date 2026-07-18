@@ -7,6 +7,7 @@ import {
 import type { Logger } from '@footcast/logger';
 import type { ScoreEventJobData } from '@footcast/queue';
 import { EventStatus, countsAsIndependentSource } from '@footcast/shared';
+import { applyEditorialAutomationAfterScore } from './apply-editorial-automation.js';
 
 function namesFromCard(card: Record<string, unknown>, key: 'clubs' | 'people'): string[] {
   const raw = card[key];
@@ -190,4 +191,13 @@ export async function processScoreEventJob(
     recommendation: scored.recommendation,
     ruleHits: scored.ruleHits,
   });
+
+  try {
+    await applyEditorialAutomationAfterScore(db, logger, data.eventId);
+  } catch (err) {
+    logger.error('Editorial automation after score failed', {
+      eventId: data.eventId,
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
 }

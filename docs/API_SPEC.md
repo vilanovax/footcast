@@ -91,7 +91,8 @@ Auth: `Authorization: Bearer <access_token>`
 | POST | `/waves/:id/complete` | اتمام موج |
 | GET | `/rundown/today` | سبد امروز (+ coverage) |
 | POST | `/rundown/today/items` | افزودن Event به سبد |
-| PATCH | `/rundown/items/:id` | Pin / Lead / section |
+| PATCH | `/rundown/items/:id` | Pin / Lead / section / `reviewStatus` (ACCEPTED\|DISMISSED برای AUTO) |
+| POST | `/rundown/items/:id/undo-auto` | Undo ورود خودکار (`addedMode=AUTO`) → REMOVED + `revertedAt` روی decision |
 | DELETE | `/rundown/items/:id` | حذف نرم از سبد (REMOVED) |
 | POST | `/rundown/today/lock` | قفل سردبیری ۱۶:۰۰ |
 | POST | `/rundown/today/reopen` | بازگشایی با دلیل |
@@ -103,7 +104,8 @@ Auth: `Authorization: Bearer <access_token>`
 `status`, `scope`, `category`, `officialStatus`, `q`, `from`, `to`,  
 `sourceId` (contains: NewsEvent→Article→Source),  
 `minFinalScore` / `minImportance` (legacy), `minCredibilityScore`,  
-`recommendation`, `hasManualOverride=true`
+`recommendation`, `hasManualOverride=true`,  
+`automation=important|suggested` (فیلتر اتوماسیون / recommendation)
 | GET | `/podcasts` | لیست اپیزودها |
 | POST | `/podcasts` | ساخت اپیزود (+ eventIds اختیاری) |
 | GET | `/podcasts/:id` | جزئیات اپیزود / items / scripts |
@@ -116,7 +118,8 @@ Auth: `Authorization: Bearer <access_token>`
 | POST | `/podcasts/:id/approve` | تأیید اپیزود برای TTS |
 | GET | `/settings` | AppSetting |
 | GET | `/settings/workspace` | تنظیمات محصول/تم/AI خلاصه |
-| GET | `/settings/control` | مرکز کنترل (Providers، Pipeline، Audit، …) |
+| GET | `/settings/control` | مرکز کنترل (Providers، Pipeline، Audit، Automation، …) |
+| PATCH | `/settings/control/automation` | Policy اتوماسیون انتخاب خبر (`control.editorial.automation`) |
 | PATCH | `/settings/control/:section` | به‌روزرسانی یک بخش کنترل |
 | POST | `/settings/control/providers/:id/key` | تنظیم/پاک کردن کلید Provider (رمزنگاری) |
 | POST | `/settings/control/providers/:id/test` | تست اتصال Provider |

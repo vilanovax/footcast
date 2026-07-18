@@ -74,6 +74,7 @@ type ControlCenter = {
   pipeline: PipelineRow[];
   auditPolicies: AuditPolicy[];
   editorialRules: Record<string, unknown>;
+  editorialAutomation: Record<string, unknown>;
   scheduling: {
     timezone: string;
     lockHour: number;
@@ -989,6 +990,17 @@ export default function SettingsPage() {
               canWrite={canWrite}
               saving={saving}
               onSave={(v) => void patchSection('editorial', v)}
+            />
+          ) : null}
+
+          {section === 'automation' && data ? (
+            <JsonPanel
+              title="اتوماسیون انتخاب خبر"
+              description="پروفایل ASSISTED پیش‌فرض: Highlight + Suggest روشن؛ Auto Add خاموش. جزئیات: docs/AUTO_EDITORIAL_SELECTION.md"
+              value={data.editorialAutomation ?? {}}
+              canWrite={canWrite}
+              saving={saving}
+              onSave={(v) => void patchSection('automation', v)}
             />
           ) : null}
 

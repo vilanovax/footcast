@@ -110,9 +110,21 @@ User, Role, Permission, Source, SourceFeed, SourceRule, SourceHealth, CrawlRun, 
 | `intake_waves` | موج استخراج روزانه (Asia/Tehran) |
 | `wave_event_observations` | مشاهده چندبه‌چند Wave ↔ Event |
 | `daily_rundowns` | سبد پادکست یک روز تا قفل ۱۶:۰۰ |
-| `daily_rundown_items` | آیتم‌های SHORTLISTED / REMOVED / FINAL |
+| `daily_rundown_items` | آیتم‌های SHORTLISTED / REMOVED / FINAL؛ `added_mode` (MANUAL/AUTO/…) |
 
 `APPROVED` ≠ حضور در پادکست امروز؛ حضور فقط از طریق `daily_rundown_items` است.
+
+### Auto Editorial Selection (ADR-007)
+
+| جدول / فیلد | نقش |
+|-------------|-----|
+| `editorial_automation_decisions` | لاگ Policy: HIGHLIGHT / SUGGEST_* / AUTO_ADD / HOLD |
+| `daily_rundown_items.added_mode` | MANUAL \| AUTO \| SUGGESTED_ACCEPTED |
+| `daily_rundown_items.automation_decision_id` | اتصال به تصمیم |
+| `daily_rundown_items.review_status` | PENDING_REVIEW \| ACCEPTED \| DISMISSED |
+| `AppSetting` `control.editorial.automation` | کانفیگ Policy |
+
+جزئیات: [AUTO_EDITORIAL_SELECTION.md](./AUTO_EDITORIAL_SELECTION.md)
 
 ### Coverage Intelligence (ADR-005)
 

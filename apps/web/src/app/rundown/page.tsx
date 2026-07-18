@@ -7,6 +7,8 @@ import { apiFetch, clearTokens, getToken } from '../../lib/api';
 import { CoveragePanel } from '../../components/CoveragePanel';
 import { WorkflowGuide } from '../../components/WorkflowGuide';
 import { EmptyState, PageHeader, SkeletonList } from '../../components/ui';
+import { StatusBadge } from '../../components/StatusBadge';
+import { labelAddedMode, labelReviewStatus } from '../../lib/automation-ui';
 
 type CoverageBucket = {
   key: string;
@@ -34,6 +36,9 @@ type RundownItem = {
   isLeadStory: boolean;
   isPinned: boolean;
   effectiveScore?: number | null;
+  addedMode?: string | null;
+  reviewStatus?: string | null;
+  automationReason?: string | null;
   event?: {
     id: string;
     title: string;
@@ -102,11 +107,32 @@ export default function RundownPage() {
   const activeItems = (rundown?.items ?? []).filter(
     (i) => i.status !== 'REMOVED' && i.status !== 'RECOMMENDED_FOR_REMOVAL',
   );
+  const autoPending = activeItems.filter(
+    (i) => i.addedMode === 'AUTO' && i.reviewStatus === 'PENDING_REVIEW',
+  );
   const locked =
     rundown?.status === 'LOCKED' ||
     rundown?.status === 'SCRIPT_GENERATING' ||
     rundown?.status === 'SCRIPT_READY' ||
     rundown?.status === 'FINALIZED';
+
+  async function reviewItem(
+    id: string,
+    reviewStatus: 'ACCEPTED' | 'DISMISSED',
+  ) {
+    setBusy(true);
+    try {
+      const res = await apiFetch<Rundown>(`/rundown/items/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ reviewStatus }),
+      });
+      setRundown(res.data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'بازبینی ناموفق');
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function removeItem(id: string) {
     setBusy(true);
@@ -118,6 +144,21 @@ export default function RundownPage() {
       setRundown(res.data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'حذف ناموفق');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function undoAutoAdd(id: string) {
+    setBusy(true);
+    try {
+      const res = await apiFetch<Rundown>(`/rundown/items/${id}/undo-auto`, {
+        method: 'POST',
+        body: JSON.stringify({ reason: 'editor_undo_auto_add' }),
+      });
+      setRundown(res.data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'بازگردانی ناموفق');
     } finally {
       setBusy(false);
     }
@@ -299,7 +340,14 @@ export default function RundownPage() {
           ) : null}
 
           <section className="mb-4">
-            <h2 className="mb-2 text-sm font-bold text-fog">خبرهای Today</h2>
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-sm font-bold text-fog">خبرهای Today</h2>
+              {autoPending.length > 0 ? (
+                <span className="rounded-full bg-amber-400/15 px-2.5 py-0.5 text-[10px] text-amber-100">
+                  {autoPending.length.toLocaleString('fa-IR')} ورود خودکار در انتظار تأیید
+                </span>
+              ) : null}
+            </div>
             {activeItems.length === 0 ? (
               <EmptyState
                 title="Today خالی است"
@@ -315,66 +363,134 @@ export default function RundownPage() {
               />
             ) : (
               <ul className="space-y-2">
-                {activeItems.map((item) => (
-                  <li
-                    key={item.id}
-                    className="rounded-xl border border-fog/10 bg-black/15 px-3 py-2.5"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0 flex-1">
-                        <div className="mb-1 flex flex-wrap gap-1.5 text-[10px] text-fog/45">
-                          {item.isLeadStory ? (
-                            <span className="rounded bg-accent/20 px-1.5 py-0.5 text-accent">
-                              Lead
+                {activeItems.map((item) => {
+                  const isAuto = item.addedMode === 'AUTO';
+                  const needsAck =
+                    isAuto && item.reviewStatus === 'PENDING_REVIEW';
+                  return (
+                    <li
+                      key={item.id}
+                      className={`rounded-xl border px-3 py-2.5 ${
+                        needsAck
+                          ? 'border-amber-400/35 bg-amber-400/[0.07]'
+                          : isAuto
+                            ? 'border-accent/25 bg-accent/[0.05]'
+                            : 'border-fog/10 bg-black/15'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
+                            {item.isLeadStory ? (
+                              <StatusBadge label="Lead" tone="accent" />
+                            ) : null}
+                            {item.isPinned ? (
+                              <StatusBadge label="سنجاق" tone="neutral" />
+                            ) : null}
+                            {isAuto ? (
+                              <StatusBadge
+                                label={labelAddedMode(item.addedMode)}
+                                tone="accent"
+                              />
+                            ) : (
+                              <StatusBadge label="دستی" tone="neutral" />
+                            )}
+                            {item.reviewStatus ? (
+                              <StatusBadge
+                                label={labelReviewStatus(item.reviewStatus)}
+                                tone={
+                                  item.reviewStatus === 'PENDING_REVIEW'
+                                    ? 'warn'
+                                    : item.reviewStatus === 'ACCEPTED'
+                                      ? 'ok'
+                                      : 'neutral'
+                                }
+                              />
+                            ) : null}
+                            <span className="text-[10px] text-fog/45">
+                              {item.section}
                             </span>
+                            <span className="text-[10px] text-fog/45">
+                              {item.estimatedDurationSeconds.toLocaleString('fa-IR')}ث
+                            </span>
+                          </div>
+                          <Link
+                            href={`/inbox/${item.newsEventId}`}
+                            className="text-sm font-semibold leading-6 text-fog hover:text-accent"
+                          >
+                            {item.event?.title ?? 'بدون عنوان'}
+                          </Link>
+                          {isAuto ? (
+                            <p className="mt-1 text-[10px] leading-5 text-fog/50">
+                              این خبر به‌صورت خودکار وارد مخزن امروز شده است.
+                              {item.automationReason
+                                ? ` · ${item.automationReason}`
+                                : ''}
+                            </p>
                           ) : null}
-                          {item.isPinned ? (
-                            <span className="rounded bg-fog/10 px-1.5 py-0.5">سنجاق</span>
-                          ) : null}
-                          <span>{item.section}</span>
-                          <span>
-                            {item.estimatedDurationSeconds.toLocaleString('fa-IR')}ث
-                          </span>
-                          {item.event?.scope ? <span>{item.event.scope}</span> : null}
                         </div>
-                        <Link
-                          href={`/inbox/${item.newsEventId}`}
-                          className="text-sm font-semibold leading-6 text-fog hover:text-accent"
-                        >
-                          {item.event?.title ?? 'بدون عنوان'}
-                        </Link>
                       </div>
-                    </div>
-                    {!locked ? (
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        <button
-                          type="button"
-                          disabled={busy}
-                          onClick={() => void setLead(item.id)}
-                          className="rounded border border-fog/15 px-2 py-1 text-[10px]"
-                        >
-                          Lead
-                        </button>
-                        <button
-                          type="button"
-                          disabled={busy}
-                          onClick={() => void togglePin(item.id, item.isPinned)}
-                          className="rounded border border-fog/15 px-2 py-1 text-[10px]"
-                        >
-                          {item.isPinned ? 'برداشتن سنجاق' : 'سنجاق'}
-                        </button>
-                        <button
-                          type="button"
-                          disabled={busy}
-                          onClick={() => void removeItem(item.id)}
-                          className="rounded border border-red-400/30 px-2 py-1 text-[10px] text-red-200"
-                        >
-                          حذف از امروز
-                        </button>
-                      </div>
-                    ) : null}
-                  </li>
-                ))}
+                      {!locked ? (
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {needsAck ? (
+                            <>
+                              <button
+                                type="button"
+                                disabled={busy}
+                                onClick={() => void reviewItem(item.id, 'ACCEPTED')}
+                                className="rounded border border-emerald-400/35 bg-emerald-400/10 px-2 py-1 text-[10px] text-emerald-100"
+                              >
+                                تأیید ورود خودکار
+                              </button>
+                              <button
+                                type="button"
+                                disabled={busy}
+                                onClick={() => void reviewItem(item.id, 'DISMISSED')}
+                                className="rounded border border-red-400/30 px-2 py-1 text-[10px] text-red-200"
+                              >
+                                رد / حذف
+                              </button>
+                            </>
+                          ) : null}
+                          {isAuto && !needsAck ? (
+                            <button
+                              type="button"
+                              disabled={busy}
+                              onClick={() => void undoAutoAdd(item.id)}
+                              className="rounded border border-amber-400/35 bg-amber-400/10 px-2 py-1 text-[10px] text-amber-100"
+                            >
+                              Undo ورود خودکار
+                            </button>
+                          ) : null}
+                          <button
+                            type="button"
+                            disabled={busy}
+                            onClick={() => void setLead(item.id)}
+                            className="rounded border border-fog/15 px-2 py-1 text-[10px]"
+                          >
+                            Lead
+                          </button>
+                          <button
+                            type="button"
+                            disabled={busy}
+                            onClick={() => void togglePin(item.id, item.isPinned)}
+                            className="rounded border border-fog/15 px-2 py-1 text-[10px]"
+                          >
+                            {item.isPinned ? 'برداشتن سنجاق' : 'سنجاق'}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={busy}
+                            onClick={() => void removeItem(item.id)}
+                            className="rounded border border-red-400/30 px-2 py-1 text-[10px] text-red-200"
+                          >
+                            حذف از امروز
+                          </button>
+                        </div>
+                      ) : null}
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </section>

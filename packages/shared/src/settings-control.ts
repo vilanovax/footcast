@@ -7,6 +7,7 @@ export type SettingsSectionId =
   | 'prompts'
   | 'audit'
   | 'editorial'
+  | 'automation'
   | 'weights'
   | 'coverage'
   | 'scheduling'
@@ -226,6 +227,12 @@ export const SETTINGS_SECTION_META: Array<{
   { id: 'prompts', label: 'Promptها', hint: 'نسخه‌بندی و قالب‌ها', editorVisible: true },
   { id: 'audit', label: 'ممیزی هوش مصنوعی', hint: 'سیاست OFF/SAMPLE/ALL', adminOnly: true },
   { id: 'editorial', label: 'قواعد سردبیری', hint: 'آستانه‌ها و سهم پوشش', editorVisible: true },
+  {
+    id: 'automation',
+    label: 'اتوماسیون انتخاب خبر',
+    hint: 'Highlight / Suggest / Auto Add',
+    editorVisible: true,
+  },
   { id: 'weights', label: 'وزن تیم/لیگ', hint: 'اولویت تحریریه', editorVisible: true },
   { id: 'coverage', label: 'اهداف پوشش', hint: 'لینک به Coverage Intelligence', editorVisible: true },
   { id: 'scheduling', label: 'زمان‌بندی موج‌ها', hint: 'موج‌ها و قفل ۱۶:۰۰', editorVisible: true },
@@ -691,6 +698,7 @@ export const CONTROL_SETTING_KEYS = {
   pipeline: 'control.ai.pipeline',
   auditPolicies: 'control.ai.audit_policies',
   editorialRules: 'control.editorial.rules',
+  editorialAutomation: 'control.editorial.automation',
   scheduling: 'control.scheduling',
   cost: 'control.cost',
   quality: 'control.quality',

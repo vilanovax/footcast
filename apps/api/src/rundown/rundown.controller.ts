@@ -103,6 +103,10 @@ class UpdateItemDto {
   @Min(10)
   @Max(300)
   estimatedDurationSeconds?: number;
+
+  @IsOptional()
+  @IsIn(['PENDING_REVIEW', 'ACCEPTED', 'DISMISSED'])
+  reviewStatus?: 'PENDING_REVIEW' | 'ACCEPTED' | 'DISMISSED';
 }
 
 class RemoveItemDto {
@@ -244,6 +248,16 @@ export class RundownController {
     @Req() req: { user: { userId: string } },
   ) {
     return this.rundown.removeItem(id, req.user.userId, body.reason);
+  }
+
+  @Post('items/:id/undo-auto')
+  @RequirePermissions('editorial:decide')
+  undoAutoAdd(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: RemoveItemDto,
+    @Req() req: { user: { userId: string } },
+  ) {
+    return this.rundown.undoAutoAdd(id, req.user.userId, body?.reason);
   }
 
   @Post('today/lock')

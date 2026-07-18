@@ -98,6 +98,7 @@ export class EditorialController {
     @Query('minFinalScore') minFinalScore?: string,
     @Query('minCredibilityScore') minCredibilityScore?: string,
     @Query('recommendation') recommendation?: string,
+    @Query('automation') automation?: string,
     @Query('sourceId') sourceId?: string,
     @Query('hasManualOverride') hasManualOverride?: string,
     @Query('q') q?: string,
@@ -116,6 +117,7 @@ export class EditorialController {
       minCredibilityScore:
         minCredibilityScore != null ? Number(minCredibilityScore) : undefined,
       recommendation,
+      automation,
       sourceId,
       hasManualOverride:
         hasManualOverride === '1' || hasManualOverride === 'true'

@@ -14,6 +14,7 @@
 |-------|------------------------------|--------|--------|
 | Article Extraction | Haiku / GPT Mini / Gemini Flash / DeepSeek / ارزان OpenRouter | متن نرمال‌شده مقاله | کارت JSON |
 | Event Merge & Analysis | Sonnet / GPT mid / Gemini Pro | چند کارت + metadata | رویداد، تناقض، اهمیت پیشنهادی |
+| Auto-Add AI Audit (`editorial_auto_add_audit`) | Haiku / GPT Mini / Mock | کارت رویداد + امتیاز + flags | `{ verdict: PASS\|FAIL\|HOLD, confidence, reasons }` |
 | Editorial / Podcast Script | Opus / GPT high / Gemini advanced | کارت‌های منتخب + قوانین + لحن + واژه‌نامه | اسکریپت گفتاری |
 | Fact Check | mid-tier | اسکریپت + claims | لیست مغایرت |
 | Translation | mid/cheap | متن | ترجمه (فاز بعدی) |

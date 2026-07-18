@@ -15,6 +15,7 @@
     "@footcast/article-pipeline": "workspace:*",
     "@footcast/config": "workspace:*",
     "@footcast/database": "workspace:*",
+    "@footcast/editorial-automation": "workspace:*",
     "@footcast/editorial-rules": "workspace:*",
     "@footcast/event-clustering": "workspace:*",
     "@footcast/logger": "workspace:*",

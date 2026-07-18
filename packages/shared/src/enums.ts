@@ -127,6 +127,27 @@ export enum RundownItemStatus {
   FINAL_SELECTED = 'FINAL_SELECTED',
 }
 
+/** How an item entered DailyRundown (ADR-007). */
+export enum RundownItemAddedMode {
+  MANUAL = 'MANUAL',
+  AUTO = 'AUTO',
+  SUGGESTED_ACCEPTED = 'SUGGESTED_ACCEPTED',
+}
+
+export enum RundownItemReviewStatus {
+  PENDING_REVIEW = 'PENDING_REVIEW',
+  ACCEPTED = 'ACCEPTED',
+  DISMISSED = 'DISMISSED',
+}
+
+export enum AutomationDecisionType {
+  HIGHLIGHT = 'HIGHLIGHT',
+  SUGGEST_ADD = 'SUGGEST_ADD',
+  SUGGEST_REPLACE = 'SUGGEST_REPLACE',
+  AUTO_ADD = 'AUTO_ADD',
+  HOLD = 'HOLD',
+}
+
 export enum RundownSection {
   LEAD = 'LEAD',
   MAIN = 'MAIN',

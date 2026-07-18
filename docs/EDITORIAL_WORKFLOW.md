@@ -38,3 +38,15 @@
 ## Podcast Portfolio
 
 الگوریتم utility کامل و سهمیه‌های پیشرفته روی DailyRundown سوار می‌شود؛ هستهٔ مدل در ADR-004 پیاده شده است.
+
+## اتوماسیون انتخاب
+
+- اسکما + تنظیمات: فاز ۱  
+- Engine: `@footcast/editorial-automation` → `evaluateAutomationPolicy`  
+- Worker: بعد از `score-event` → `applyEditorialAutomationAfterScore`  
+  - persist در `editorial_automation_decisions`  
+  - hint در `NewsEvent.metadata.lastAutomation`  
+  - AUTO_ADD فقط اگر flag روشن و گاردها OK → `DailyRundownItem` با `addedMode=AUTO`  
+- UI: inbox badge/فیلتر؛ Today تفکیک خودکار + تأیید/رد (`reviewStatus`)  
+
+پیش‌فرض ASSISTED (Auto Add خاموش). جزئیات: [AUTO_EDITORIAL_SELECTION.md](./AUTO_EDITORIAL_SELECTION.md).

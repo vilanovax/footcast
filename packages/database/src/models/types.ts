@@ -618,8 +618,36 @@ export interface DailyRundownItemAttrs {
   isLeadStory: boolean;
   isPinned: boolean;
   editorNote: string | null;
+  /** ADR-007: MANUAL | AUTO | SUGGESTED_ACCEPTED */
+  addedMode: string;
+  automationDecisionId: string | null;
+  /** PENDING_REVIEW | ACCEPTED | DISMISSED */
+  reviewStatus: string | null;
+  reviewedBy: string | null;
+  reviewedAt: Date | null;
+  automationReason: string | null;
+  scoreSnapshot: Record<string, unknown> | null;
   createdAt?: Date;
   updatedAt?: Date;
+}
+
+export interface EditorialAutomationDecisionAttrs {
+  id: string;
+  newsEventId: string;
+  rundownId: string | null;
+  rundownItemId: string | null;
+  decisionType: string;
+  policyVersion: string;
+  profileMode: string;
+  scoreSnapshot: Record<string, unknown> | null;
+  coverageSnapshot: Record<string, unknown> | null;
+  reasons: unknown;
+  blockedReasons: unknown;
+  executed: boolean;
+  executedAt: Date | null;
+  revertedAt: Date | null;
+  revertedBy: string | null;
+  createdAt?: Date;
 }
 
 export interface EditorialTeamAttrs {
