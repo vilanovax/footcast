@@ -266,15 +266,81 @@ export interface NewsEventAttrs {
   scope: string | null;
   category: string | null;
   officialStatus: string | null;
+  /** @deprecated mirrors effectiveFinalScore / automatic final for legacy clients */
   importanceScore: number | null;
   credibilityScore: number | null;
   freshnessScore: number | null;
+  podcastValueScore: number | null;
+  effectiveFinalScore: number | null;
+  recommendation: string | null;
   primaryArticleId: string | null;
   articleCount: number;
+  independentSourceCount: number;
+  eventAction: string | null;
+  eventSignature: Record<string, unknown> | null;
+  latestDevelopmentSummary: string | null;
+  mergedIntoEventId: string | null;
   fingerprint: string | null;
   metadata: Record<string, unknown> | null;
   firstSeenAt: Date;
   lastSeenAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface ClusterDecisionLogAttrs {
+  id: string;
+  rawArticleId: string;
+  selectedEventId: string | null;
+  decision: string;
+  relationship: string | null;
+  finalSimilarity: number | null;
+  similarityBreakdown: Record<string, unknown> | null;
+  candidateSnapshot: unknown;
+  thresholdPolicyVersion: string;
+  aiUsed: boolean;
+  aiProvider: string | null;
+  aiModel: string | null;
+  aiConfidence: number | null;
+  reason: string | null;
+  processingDurationMs: number | null;
+  createdAt?: Date;
+}
+
+export interface ClusteringEvaluationAttrs {
+  id: string;
+  rawArticleId: string;
+  predictedEventId: string | null;
+  predictedRelationship: string | null;
+  predictedScore: number | null;
+  expectedEventId: string | null;
+  expectedRelationship: string;
+  verdict: string;
+  reviewerId: string | null;
+  note: string | null;
+  decisionLogId: string | null;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface EntityAttrs {
+  id: string;
+  type: string;
+  canonicalName: string;
+  normalizedName: string;
+  externalId: string | null;
+  isActive: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface EntityAliasAttrs {
+  id: string;
+  entityId: string;
+  alias: string;
+  normalizedAlias: string;
+  language: string | null;
+  sourceId: string | null;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -287,6 +353,23 @@ export interface NewsEventArticleAttrs {
   role: string;
   matchMethod: string | null;
   similarityScore: number | null;
+  relationshipDecision: string | null;
+  similarityBreakdown: Record<string, unknown> | null;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface EventTimelineItemAttrs {
+  id: string;
+  newsEventId: string;
+  rawArticleId: string | null;
+  sourceId: string | null;
+  developmentType: string;
+  action: string | null;
+  summary: string;
+  occurredAt: Date | null;
+  publishedAt: Date | null;
+  isMajorDevelopment: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -332,13 +415,35 @@ export interface EditorialScoreAttrs {
   id: string;
   eventId: string;
   finalScore: number;
+  credibilityScore: number | null;
+  importanceScore: number | null;
+  podcastValueScore: number | null;
+  rawFinalScore: number | null;
+  totalBonus: number;
+  totalPenalty: number;
+  recommendation: string | null;
   factors: Record<string, unknown>;
   penalties: Record<string, unknown>;
   ruleHits: string[];
   breakdown: Record<string, unknown> | null;
+  reasons: unknown[] | null;
+  bonuses: unknown[] | null;
+  penaltyItems: unknown[] | null;
+  inputSnapshot: Record<string, unknown> | null;
   scorerVersion: string;
   createdAt?: Date;
   updatedAt?: Date;
+}
+
+export interface EditorialScoreOverrideAttrs {
+  id: string;
+  newsEventId: string;
+  automaticFinalScore: number;
+  overriddenFinalScore: number;
+  reason: string;
+  userId: string | null;
+  createdAt?: Date;
+  revokedAt: Date | null;
 }
 
 export interface EditorialDecisionAttrs {
@@ -435,6 +540,185 @@ export interface PodcastPublicationAttrs {
   guid: string;
   publishedAt: Date;
   rssMetadata: Record<string, unknown> | null;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface IntakeWaveAttrs {
+  id: string;
+  editorialDate: string;
+  timezone: string;
+  label: string;
+  profile: string;
+  scheduledAt: Date | null;
+  startedAt: Date | null;
+  completedAt: Date | null;
+  status: string;
+  sourcesChecked: number;
+  articlesDiscovered: number;
+  articlesNew: number;
+  exactDuplicates: number;
+  nearDuplicates: number;
+  eventsCreated: number;
+  eventsUpdated: number;
+  failedSources: number;
+  metadata: Record<string, unknown> | null;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface WaveEventObservationAttrs {
+  id: string;
+  waveId: string;
+  newsEventId: string;
+  observationType: string;
+  previousVersionId: string | null;
+  currentVersionId: string | null;
+  rawArticleIds: string[] | null;
+  detectedAt: Date;
+  isSeenByEditor: boolean;
+  seenAt: Date | null;
+  significanceScore: number | null;
+  summary: string | null;
+  metadata: Record<string, unknown> | null;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface DailyRundownAttrs {
+  id: string;
+  editorialDate: string;
+  timezone: string;
+  deadlineAt: Date;
+  status: string;
+  targetDurationSeconds: number;
+  lockedAt: Date | null;
+  lockedBy: string | null;
+  finalizedAt: Date | null;
+  reopenReason: string | null;
+  metadata: Record<string, unknown> | null;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface DailyRundownItemAttrs {
+  id: string;
+  rundownId: string;
+  newsEventId: string;
+  status: string;
+  section: string;
+  editorialPriority: number;
+  effectiveScore: number | null;
+  estimatedDurationSeconds: number;
+  position: number;
+  addedBy: string | null;
+  addedAt: Date;
+  removedAt: Date | null;
+  removalReason: string | null;
+  isLeadStory: boolean;
+  isPinned: boolean;
+  editorNote: string | null;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface EditorialTeamAttrs {
+  id: string;
+  slug: string;
+  nameFa: string;
+  nameEn: string | null;
+  scope: string | null;
+  isKeyTeam: boolean;
+  aliases: string[] | null;
+  isActive: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface CompetitionAttrs {
+  id: string;
+  slug: string;
+  nameFa: string;
+  nameEn: string | null;
+  kind: string;
+  region: string | null;
+  aliases: string[] | null;
+  isActive: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface TrackedEventAttrs {
+  id: string;
+  slug: string;
+  title: string;
+  type: string;
+  competitionId: string | null;
+  startsAt: Date | null;
+  endsAt: Date | null;
+  priority: number;
+  targetNewsCount: number | null;
+  targetDurationSeconds: number | null;
+  activeBoost: number;
+  aliases: string[] | null;
+  isActive: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface NewsEventTeamAttrs {
+  id: string;
+  newsEventId: string;
+  teamId: string;
+  role: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface NewsEventCompetitionAttrs {
+  id: string;
+  newsEventId: string;
+  competitionId: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface NewsEventTrackedEventAttrs {
+  id: string;
+  newsEventId: string;
+  trackedEventId: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface CoverageTargetAttrs {
+  id: string;
+  dimension: string;
+  key: string;
+  label: string | null;
+  minSelectedCount: number | null;
+  maxSelectedCount: number | null;
+  minDurationSeconds: number | null;
+  maxDurationSeconds: number | null;
+  priority: number;
+  enforcement: string;
+  editorialProfileId: string | null;
+  isActive: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface EditorialEntityWeightAttrs {
+  id: string;
+  entityType: string;
+  entityId: string;
+  entityKey: string;
+  baseWeight: number;
+  audienceWeight: number;
+  eventBoost: number;
+  effectiveFrom: Date | null;
+  effectiveTo: Date | null;
+  isActive: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }

@@ -33,6 +33,17 @@ const envSchema = z.object({
   SECRETS_ENCRYPTION_KEY: z.string().default('0123456789abcdef0123456789abcdef'),
   PRODUCT_NAME_EN: z.string().default('Football Newsroom'),
   PRODUCT_NAME_FA: z.string().default('اتاق خبر فوتبال'),
+  /** When true, AI boundary judge may call a real provider (still only in score band). */
+  CLUSTER_AI_JUDGE_ENABLED: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((v) => v === 'true'),
+  /** Fail-fast if mock embeddings used outside development/test. */
+  EMBEDDING_ALLOW_MOCK: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform((v) => v === 'true'),
+  EMBEDDING_PROVIDER: z.enum(['mock', 'openai']).default('mock'),
 });
 
 export type AppConfig = z.infer<typeof envSchema>;

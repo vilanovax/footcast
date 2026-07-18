@@ -1,5 +1,9 @@
 import { getConfig } from '@footcast/config';
 import { authenticateDatabase, getDatabase } from '@footcast/database';
+import {
+  configureEmbeddingRuntime,
+  createEmbeddingProvider,
+} from '@footcast/event-clustering';
 import { createLogger } from '@footcast/logger';
 import {
   createQueue,
@@ -25,6 +29,16 @@ import { processPublishEpisodeJob } from './services/publish-episode.js';
 async function main(): Promise<void> {
   const config = getConfig();
   const logger = createLogger({ service: 'worker' });
+  const allowMock =
+    config.EMBEDDING_ALLOW_MOCK ||
+    config.NODE_ENV === 'development' ||
+    config.NODE_ENV === 'test';
+  const embeddingProvider = createEmbeddingProvider({
+    provider: config.EMBEDDING_PROVIDER,
+    apiKey: process.env.OPENAI_API_KEY ?? null,
+    allowMock,
+  });
+  configureEmbeddingRuntime({ allowMock, provider: embeddingProvider });
   const db = getDatabase(config.DATABASE_URL);
   await authenticateDatabase(db);
 

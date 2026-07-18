@@ -103,6 +103,29 @@ flowchart TD
 
 ویژگی‌ها: Retry، Exponential Backoff، DLQ، Idempotency key، Timeout، Priority، Concurrency limit، Logs، Manual retry، Cancel.
 
+## ۶٫۱. Clustering v2 (خلاصه)
+
+```mermaid
+flowchart TD
+  A[Extracted Article] --> B{Exact / Near Dup}
+  B -->|yes| C[Attach EXACT/NEAR_DUPLICATE]
+  B -->|no| D[Event Signature + Candidates]
+  D --> E[Structured Similarity]
+  E -->|">= 0.90"| F[Classify relationship + Attach]
+  E -->|"0.74–0.90"| G[AI Boundary Judge]
+  E -->|"< 0.74"| H[Create NewsEvent]
+  G -->|SAME / NEW_DEV| F
+  G -->|UNRELATED / low conf| H
+  F -->|NEW_DEVELOPMENT| I[Timeline + rescore]
+  C --> J[Inbox sees one Event]
+  H --> J
+  I --> J
+```
+
+جزئیات: `ADR-003-news-deduplication.md`، `CLUSTERING_EVALUATION.md` و `@footcast/event-clustering`.
+
+ابزار PR-B: Decision Log پایدار، UI ارزیابی `/admin/clustering-evaluation`، Metrics، Alias سبک، Merge/Split دستی با Audit، AI Judge پشت `CLUSTER_AI_JUDGE_ENABLED`.
+
 ## ۷. لایه AI
 
 نگاه کنید به `AI_PIPELINE.md` و `ADR-002`.

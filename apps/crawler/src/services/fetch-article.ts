@@ -8,8 +8,12 @@ import type { FetchArticleJobData, ParseArticleJobData, Queue } from '@footcast/
 import { ArticleStatus } from '@footcast/shared';
 import { safeFetch } from '../http/safe-fetch.js';
 
+/** Always resolve under monorepo root so crawler + worker share the same files. */
 function storageRoot(): string {
-  return process.env.RAW_STORAGE_PATH || path.resolve(process.cwd(), '../../data/raw-html');
+  const raw = process.env.RAW_STORAGE_PATH || 'data/raw-html';
+  if (path.isAbsolute(raw)) return raw;
+  const monorepoRoot = path.resolve(process.cwd(), '../..');
+  return path.resolve(monorepoRoot, raw);
 }
 
 export async function processFetchArticleJob(
@@ -65,7 +69,7 @@ export async function processFetchArticleJob(
       httpStatus: response.status,
       fetchedAt: new Date(),
       contentHash,
-      storagePath: filePath,
+      storagePath: path.resolve(filePath),
       errorMessage: null,
     });
 

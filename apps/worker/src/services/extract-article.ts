@@ -9,7 +9,7 @@ import { assertTransition } from '@footcast/article-pipeline';
 import type { Database } from '@footcast/database';
 import type { Logger } from '@footcast/logger';
 import type { ClusterEventJobData, ExtractArticleJobData, Queue } from '@footcast/queue';
-import { ArticleStatus } from '@footcast/shared';
+import { ArticleStatus, assessFootballRelevance } from '@footcast/shared';
 
 export async function processExtractArticleJob(
   db: Database,
@@ -141,7 +141,16 @@ export async function processExtractArticleJob(
     }
 
     const card = validation.data;
-    const nextStatus = card.isRelevant ? ArticleStatus.EXTRACTED : ArticleStatus.IRRELEVANT;
+    const titleForGate =
+      card.headlineFa ||
+      String(article.getDataValue('title') ?? content.getDataValue('extractedTitle') ?? '');
+    const gate = assessFootballRelevance({
+      title: titleForGate,
+      summary: card.summaryFa,
+      leadText: truncated.slice(0, 500),
+    });
+    const isRelevant = card.isRelevant && gate.isFootball;
+    const nextStatus = isRelevant ? ArticleStatus.EXTRACTED : ArticleStatus.IRRELEVANT;
     assertTransition(ArticleStatus.EXTRACTING, nextStatus);
 
     await db.models.ArticleExtraction.create({
@@ -149,22 +158,26 @@ export async function processExtractArticleJob(
       articleId: data.articleId,
       promptVersionId: promptVersion.getDataValue('id'),
       aiRequestId: requestId,
-      cardJson: card as unknown as Record<string, unknown>,
-      isRelevant: card.isRelevant,
+      cardJson: {
+        ...(card as unknown as Record<string, unknown>),
+        isRelevant,
+        relevanceGate: gate,
+      },
+      isRelevant,
       scope: card.scope,
-      category: card.category,
+      category: isRelevant ? card.category : card.category,
       headlineFa: card.headlineFa,
       summaryFa: card.summaryFa,
       officialStatus: card.officialStatus,
-      importanceScore: card.importanceScore,
+      importanceScore: isRelevant ? card.importanceScore : Math.min(card.importanceScore ?? 0, 10),
       credibilityScore: card.credibilityScore,
       freshnessScore: card.freshnessScore,
-      validationErrors: null,
+      validationErrors: gate.isFootball ? null : gate.reasons,
     });
 
     await article.update({
       status: nextStatus,
-      errorMessage: null,
+      errorMessage: isRelevant ? null : `not_football: ${gate.reasons.join(',')}`,
       title: card.headlineFa || article.getDataValue('title'),
     });
 
@@ -178,7 +191,9 @@ export async function processExtractArticleJob(
 
     logger.info('Article extracted', {
       articleId: data.articleId,
-      isRelevant: card.isRelevant,
+      isRelevant,
+      aiSaidRelevant: card.isRelevant,
+      gate,
       category: card.category,
       importanceScore: card.importanceScore,
       provider: result.provider,

@@ -54,16 +54,19 @@
 ## جداول فاز ۴ — Event Clustering
 
 ### news_events
-رویداد خبری ادغام‌شده: `title`, `summary`, `status` (EventStatus)، `scope`, `category`, `officialStatus`, scores، `primaryArticleId`, `articleCount`, `fingerprint`, `firstSeenAt` / `lastSeenAt`.
+رویداد خبری ادغام‌شده: `title`, `summary`, `status` (EventStatus)، `scope`, `category`, `officialStatus`, scores، `primaryArticleId`, `articleCount`, `independentSourceCount`, `eventAction`, `eventSignature` (JSONB)، `latestDevelopmentSummary`, `fingerprint`, `firstSeenAt` / `lastSeenAt`.
 
 ### news_event_articles
-لینک مقاله↔رویداد: `role` (`primary|duplicate|related`)، `matchMethod`، `similarityScore`؛ `article_id` یکتا.
+لینک مقاله↔رویداد: `role` (`PRIMARY|SUPPORTING|EXACT_DUPLICATE|NEAR_DUPLICATE|NEW_DEVELOPMENT|CONFLICTING|BACKGROUND`)، `matchMethod`، `similarityScore`، `relationshipDecision`، `similarityBreakdown`؛ `article_id` یکتا. نقش‌های legacy (`primary|duplicate|related`) در migration نرمال می‌شوند.
+
+### event_timeline_items
+تحولات رویداد: `developmentType`, `action`, `summary`, `occurredAt`, `publishedAt`, `isMajorDevelopment`, FK به event/article/source.
 
 ### news_event_conflicts
 موارد مبهم برای review: `conflictType`, `status` (`open|resolved`)، `details` JSONB.
 
 ### article_embeddings
-بردار معنایی: `embedding` JSONB (ابعاد ۲۵۶ mock)، `contentHash`، `provider/model`. شباهت cosine در اپ محاسبه می‌شود؛ `CREATE EXTENSION vector` در migration در صورت وجود pgvector بی‌خطر است.
+بردار معنایی: `embedding` JSONB (ابعاد ۲۵۶ mock)، `contentHash`، `provider/model`. شباهت cosine در اپ محاسبه می‌شود؛ `EmbeddingProvider` abstraction برای اتصال بعدی pgvector/provider واقعی.
 
 ## جداول فاز ۶ — Podcast Builder
 
@@ -94,7 +97,40 @@
 
 ## کاتالوگ کامل Entityها
 
-User, Role, Permission, Source, SourceFeed, SourceRule, SourceHealth, CrawlRun, CrawlError, RawArticle, ArticleContent, ArticleExtraction, ArticleEntity, ArticleClaim, ArticleMetric, NewsEvent, NewsEventArticle, NewsEventEntity, NewsEventClaim, NewsEventConflict, NewsEventTimeline, Club, League, Competition, Country, Person, Match, Season, EditorialRule, EditorialScore, EditorialDecision, EditorialNote, PodcastEpisode, PodcastEpisodeItem, PodcastScript, PodcastScriptVersion, PodcastAudio, PodcastPublication, AIProvider, AIModel, AIPipeline, AIRequest, AIUsage, AICost, PromptTemplate, PromptVersion, Job, JobRun, JobError, Notification, AuditLog, AppSetting, FeatureFlag
+User, Role, Permission, Source, SourceFeed, SourceRule, SourceHealth, CrawlRun, CrawlError, RawArticle, ArticleContent, ArticleExtraction, ArticleEntity, ArticleClaim, ArticleMetric, NewsEvent, NewsEventArticle, NewsEventEntity, NewsEventClaim, NewsEventConflict, NewsEventTimeline, ClusterDecisionLog, ClusteringEvaluation, Entity, EntityAlias, Club, League, Competition, Country, Person, Match, Season, EditorialRule, EditorialScore, EditorialDecision, EditorialNote, PodcastEpisode, PodcastEpisodeItem, PodcastScript, PodcastScriptVersion, PodcastAudio, PodcastPublication, AIProvider, AIModel, AIPipeline, AIRequest, AIUsage, AICost, PromptTemplate, PromptVersion, Job, JobRun, JobError, Notification, AuditLog, AppSetting, FeatureFlag
+
+### PR-B — Clustering evaluation
+
+- `news_events.merged_into_event_id` + status `MERGED` (حذف فیزیکی ندارد)
+
+### Daily rundown / intake waves (ADR-004)
+
+| جدول | نقش |
+|------|-----|
+| `intake_waves` | موج استخراج روزانه (Asia/Tehran) |
+| `wave_event_observations` | مشاهده چندبه‌چند Wave ↔ Event |
+| `daily_rundowns` | سبد پادکست یک روز تا قفل ۱۶:۰۰ |
+| `daily_rundown_items` | آیتم‌های SHORTLISTED / REMOVED / FINAL |
+
+`APPROVED` ≠ حضور در پادکست امروز؛ حضور فقط از طریق `daily_rundown_items` است.
+
+### Coverage Intelligence (ADR-005)
+
+| جدول | نقش |
+|------|-----|
+| `editorial_teams` | تیم‌های کلیدی + alias |
+| `competitions` | لیگ/تورنمنت |
+| `tracked_events` | رویداد زمان‌دار (مثل جام جهانی ۲۰۲۶) |
+| `news_event_teams` / `_competitions` / `_tracked_events` | junction چندبه‌چند |
+| `coverage_targets` | اهداف soft/hard پوشش |
+| `editorial_entity_weights` | وزن مخاطب/رویداد برای پیشنهاد |
+
+شمارنده‌ها: discovered / eligible / selected — بر اساس NewsEvent یکتا؛ یک Event می‌تواند چند Bucket داشته باشد.
+- `cluster_decision_logs` — تصمیم clustering + policy version + AI/latency
+- `clustering_evaluations` — Ground Truth انسانی
+- `entities` / `entity_aliases` — Alias Registry سبک (نه Entity Master کامل)
+
+جزئیات ارزیابی: `CLUSTERING_EVALUATION.md`.
 
 ## ERD پیشنهادی (هسته)
 

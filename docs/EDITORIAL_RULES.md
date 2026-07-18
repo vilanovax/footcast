@@ -17,37 +17,56 @@
 11. خبر قدیمی بدون تحول جدید حذف شود.
 12. تناقض منابع → ارجاع به سردبیر انسانی.
 
-## مدل امتیازدهی Importance (۰–۱۰۰)
+## مدل امتیازدهی Hybrid MVP (۰–۱۰۰)
 
-### وزن‌ها
+سیاست متمرکز در `packages/shared/src/scoring-policy.ts` (`MVP_SCORING_POLICY` v1.0.0).
 
-| عامل | وزن |
-|------|-----|
-| اثرگذاری ورزشی | 25% |
-| اهمیت تیم یا بازیکن | 15% |
-| اعتبار منبع | 15% |
-| تازگی خبر | 15% |
-| رسمی بودن | 10% |
-| تأثیر ملی/بین‌المللی | 10% |
-| تعداد منابع مستقل | 5% |
-| قابلیت استفاده در پادکست | 5% |
+### سه امتیاز پایه
 
-### جریمه‌ها
+| امتیاز | نقش |
+|--------|-----|
+| `credibilityScore` | اعتماد به ادعا (seed منابع + وضعیت رسمی + منابع مستقل + شواهد) |
+| `importanceScore` | اثر ورزشی / مخاطب / تازگی / novelty |
+| `podcastValueScore` | تناسب برای اپیزود (جذابیت، روایت، explainability) |
 
-| دلیل | سقف جریمه |
-|------|-----------|
-| تکراری | تا ۴۰- |
-| قدیمی | تا ۳۰- |
-| تیتر کلیک‌خور | تا ۲۰- |
-| منبع نامعتبر | تا ۳۰- |
-| نبود تحول جدید | تا ۲۵- |
-| شایعه تک‌منبعی | تا ۲۵- |
+### فرمول نهایی
 
-### ترکیب Rule + AI
+`rawFinal = 0.45·importance + 0.35·credibility + 0.20·podcastValue`  
+`finalScore = clamp(rawFinal + bonuses − penalties)`  
+`effectiveFinalScore` = final خودکار یا override دستی سردبیر  
+فیلد legacy `NewsEvent.importanceScore` برای سازگاری = `effectiveFinalScore` گردشده.
 
-- بخش Rule-Based: اعتبار منبع seed، تازگی، رسمی بودن، وزن باشگاه/تیم ملی، جریمه‌های قطعی
-- بخش AI-Based: اثرگذاری، اهمیت بازیکن، قابلیت پادکست، تشخیص کلیک‌خور
-- امتیاز نهایی = ترکیب وزن‌دار؛ تصمیم انسانی می‌تواند override کند و Audit شود
+### اعتبار منبع (`Source.credibilitySeed`)
+
+در فرمول استفاده می‌شود: `highestTrusted×0.60 + avgOthers×0.40`؛ منبع رسمی باشگاه/فدراسیون کف ۹۰.
+
+### پیشنهاد پادکست (`recommendation`)
+
+| کد | معنی |
+|----|------|
+| `LEAD_STORY` | تیتر اول |
+| `INCLUDE_IN_MAIN_PODCAST` | پادکست اصلی |
+| `INCLUDE_AS_BRIEF` | خبر کوتاه |
+| `NEEDS_EDITOR_REVIEW` | نیاز به بررسی |
+| `REJECT_OR_ARCHIVE` | رد / بایگانی |
+
+آستانه‌ها در `MVP_SCORING_POLICY.thresholds`. اعتبار زیر ۴۰ → همیشه `NEEDS_EDITOR_REVIEW`.
+
+### جریمه‌ها / بونوس‌ها (نمونه)
+
+| کد | اثر تقریبی |
+|----|------------|
+| `SINGLE_SOURCE_RUMOR` | −۲۰ |
+| `CLICKBAIT` / `ADVERTISEMENT` | −۱۵ / −۳۰ |
+| `OLD_WITHOUT_NEW_DEVELOPMENT` | −۲۰ |
+| `MAJOR_SOURCE_CONFLICT` | −۱۵ |
+| باشگاه بزرگ ایران / تیم ملی | بونوس |
+
+### ترکیب Rule + AI + Override
+
+- AI فقط hint می‌دهد (`importanceScore` / `credibilityScore` کارت استخراج)
+- ریاضیات و سیاست در backend (`@footcast/editorial-rules`)
+- Override دستی: `POST/DELETE /editorial/events/:id/score-override` + AuditLog
 
 ## تشخیص تکراری (چندلایه)
 

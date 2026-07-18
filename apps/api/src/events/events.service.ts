@@ -4,12 +4,16 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Op } from 'sequelize';
 import { canCluster } from '@footcast/article-pipeline';
 import type { Database } from '@footcast/database';
-import type { ClusterEventJobData, Queue } from '@footcast/queue';
-import { ArticleStatus, EventStatus } from '@footcast/shared';
+import type { ClusterEventJobData, Queue, ScoreEventJobData } from '@footcast/queue';
+import { ArticleStatus, EventStatus, countsAsIndependentSource } from '@footcast/shared';
 import { DATABASE_TOKEN } from '../database/database.tokens.js';
-import { CLUSTER_EVENT_QUEUE } from '../queue/queue.tokens.js';
+import {
+  CLUSTER_EVENT_QUEUE,
+  SCORE_EVENT_QUEUE,
+} from '../queue/queue.tokens.js';
 
 @Injectable()
 export class EventsService {
@@ -17,12 +21,16 @@ export class EventsService {
     @Inject(DATABASE_TOKEN) private readonly db: Database,
     @Inject(CLUSTER_EVENT_QUEUE)
     private readonly clusterQueue: Queue<ClusterEventJobData>,
+    @Inject(SCORE_EVENT_QUEUE)
+    private readonly scoreQueue: Queue<ScoreEventJobData>,
   ) {}
 
   async list(page = 1, pageSize = 20, status?: EventStatus) {
     const limit = Math.min(Math.max(pageSize, 1), 100);
     const offset = (Math.max(page, 1) - 1) * limit;
-    const where = status ? { status } : {};
+    const where = status
+      ? { status }
+      : { status: { [Op.ne]: EventStatus.MERGED } };
     const { rows, count } = await this.db.models.NewsEvent.findAndCountAll({
       where,
       order: [['lastSeenAt', 'DESC']],
@@ -40,9 +48,18 @@ export class EventsService {
       include: [
         {
           association: 'articles',
-          include: [{ association: 'article' }],
+          include: [{ association: 'article', include: [{ association: 'source' }] }],
         },
         { association: 'conflicts' },
+        {
+          association: 'timelineItems',
+          separate: true,
+          limit: 30,
+          order: [
+            ['occurredAt', 'DESC'],
+            ['createdAt', 'DESC'],
+          ],
+        },
       ],
     });
     if (!event) throw new NotFoundException('Event not found');
@@ -89,84 +106,191 @@ export class EventsService {
     };
   }
 
-  async merge(sourceEventId: string, targetEventId: string) {
-    if (sourceEventId === targetEventId) {
-      throw new BadRequestException('Cannot merge an event into itself');
-    }
-    const source = await this.db.models.NewsEvent.findByPk(sourceEventId);
-    const target = await this.db.models.NewsEvent.findByPk(targetEventId);
-    if (!source || !target) throw new NotFoundException('Event not found');
-
+  private async recountIndependent(eventId: string): Promise<number> {
     const links = await this.db.models.NewsEventArticle.findAll({
-      where: { eventId: sourceEventId },
+      where: { eventId },
+      include: [{ association: 'article', attributes: ['sourceId'] }],
     });
+    const ids = new Set<string>();
     for (const link of links) {
-      await link.update({
-        eventId: targetEventId,
-        role: 'duplicate',
-        matchMethod: 'manual',
+      if (!countsAsIndependentSource(link.getDataValue('role'))) continue;
+      const article = (
+        link as unknown as { article?: { getDataValue: (k: string) => unknown } }
+      ).article;
+      const sid = article?.getDataValue('sourceId');
+      if (sid) ids.add(String(sid));
+    }
+    return Math.max(1, ids.size || 1);
+  }
+
+  private async enqueueScore(eventId: string) {
+    await this.scoreQueue.add(
+      'score',
+      { eventId, reason: 'manual' },
+      { jobId: `score-${eventId}-${Date.now()}` },
+    );
+  }
+
+  async mergeMany(
+    primaryEventId: string,
+    secondaryEventIds: string[],
+    reason: string,
+    actorUserId?: string,
+  ) {
+    if (!reason.trim()) throw new BadRequestException('Reason required');
+    const uniqueSecondaries = [...new Set(secondaryEventIds)].filter(
+      (id) => id !== primaryEventId,
+    );
+    if (uniqueSecondaries.length === 0) {
+      throw new BadRequestException('No secondary events to merge');
+    }
+
+    const primary = await this.db.models.NewsEvent.findByPk(primaryEventId);
+    if (!primary) throw new NotFoundException('Primary event not found');
+    if (primary.getDataValue('status') === EventStatus.MERGED) {
+      throw new BadRequestException('Primary event is already merged');
+    }
+
+    for (const secondaryId of uniqueSecondaries) {
+      const secondary = await this.db.models.NewsEvent.findByPk(secondaryId);
+      if (!secondary) throw new NotFoundException(`Event not found: ${secondaryId}`);
+      if (secondary.getDataValue('status') === EventStatus.MERGED) {
+        // idempotent: already merged into someone
+        if (secondary.getDataValue('mergedIntoEventId') === primaryEventId) continue;
+        throw new BadRequestException(`Event already merged: ${secondaryId}`);
+      }
+      // prevent cycle: primary already merged into secondary
+      if (primary.getDataValue('mergedIntoEventId') === secondaryId) {
+        throw new BadRequestException('Merge would create a cycle');
+      }
+
+      const links = await this.db.models.NewsEventArticle.findAll({
+        where: { eventId: secondaryId },
+      });
+      for (const link of links) {
+        const articleId = link.getDataValue('articleId');
+        const existing = await this.db.models.NewsEventArticle.findOne({
+          where: { articleId, eventId: primaryEventId },
+        });
+        if (existing) {
+          await link.destroy();
+          continue;
+        }
+        await link.update({
+          eventId: primaryEventId,
+          role:
+            link.getDataValue('role') === 'PRIMARY'
+              ? 'SUPPORTING'
+              : link.getDataValue('role'),
+          matchMethod: 'manual',
+        });
+      }
+
+      await this.db.models.EventTimelineItem.update(
+        { newsEventId: primaryEventId },
+        { where: { newsEventId: secondaryId } },
+      );
+
+      await this.db.models.NewsEventConflict.update(
+        {
+          status: 'resolved',
+          resolvedAt: new Date(),
+          otherEventId: primaryEventId,
+          details: { resolution: 'manual_merge', reason },
+        },
+        { where: { eventId: secondaryId, status: 'open' } },
+      );
+
+      await secondary.update({
+        status: EventStatus.MERGED,
+        mergedIntoEventId: primaryEventId,
+        articleCount: 0,
+        metadata: {
+          ...(secondary.getDataValue('metadata') ?? {}),
+          mergedInto: primaryEventId,
+          mergeReason: reason,
+        },
       });
     }
 
-    await this.db.models.NewsEventConflict.update(
-      { status: 'resolved', resolvedAt: new Date(), otherEventId: targetEventId },
-      { where: { eventId: sourceEventId, status: 'open' } },
-    );
-
     const count = await this.db.models.NewsEventArticle.count({
-      where: { eventId: targetEventId },
+      where: { eventId: primaryEventId },
     });
-    await target.update({
+    const independentSourceCount = await this.recountIndependent(primaryEventId);
+    await primary.update({
       articleCount: count,
+      independentSourceCount,
       lastSeenAt: new Date(),
-      importanceScore: Math.max(
-        target.getDataValue('importanceScore') ?? 0,
-        source.getDataValue('importanceScore') ?? 0,
-      ),
-      credibilityScore: Math.max(
-        target.getDataValue('credibilityScore') ?? 0,
-        source.getDataValue('credibilityScore') ?? 0,
-      ),
       status:
-        target.getDataValue('status') === EventStatus.CONFLICTED
+        primary.getDataValue('status') === EventStatus.CONFLICTED
           ? EventStatus.NEEDS_REVIEW
-          : target.getDataValue('status'),
+          : primary.getDataValue('status'),
       metadata: {
-        ...(target.getDataValue('metadata') ?? {}),
-        mergedFrom: sourceEventId,
-      },
-    });
-    await source.update({
-      status: EventStatus.ARCHIVED,
-      articleCount: 0,
-      metadata: {
-        ...(source.getDataValue('metadata') ?? {}),
-        mergedInto: targetEventId,
+        ...(primary.getDataValue('metadata') ?? {}),
+        lastManualMerge: { secondaryEventIds: uniqueSecondaries, reason },
       },
     });
 
-    return this.get(targetEventId);
+    if (actorUserId) {
+      await this.db.models.AuditLog.create({
+        id: cryptoRandomUuid(),
+        actorUserId,
+        action: 'events.merge',
+        entityType: 'NewsEvent',
+        entityId: primaryEventId,
+        before: { secondaryEventIds: uniqueSecondaries },
+        after: { reason },
+        ip: null,
+      });
+    }
+
+    await this.enqueueScore(primaryEventId);
+    return this.get(primaryEventId);
   }
 
-  async split(eventId: string, articleId: string) {
-    const link = await this.db.models.NewsEventArticle.findOne({
-      where: { eventId, articleId },
-    });
-    if (!link) throw new NotFoundException('Article not linked to this event');
+  /** @deprecated prefer mergeMany */
+  async merge(sourceEventId: string, targetEventId: string) {
+    return this.mergeMany(targetEventId, [sourceEventId], 'legacy merge endpoint');
+  }
+
+  async splitMany(
+    eventId: string,
+    articleIds: string[],
+    reason: string,
+    newHeadline?: string,
+    actorUserId?: string,
+  ) {
+    if (!reason.trim()) throw new BadRequestException('Reason required');
+    const uniqueArticles = [...new Set(articleIds)];
+    if (uniqueArticles.length === 0) {
+      throw new BadRequestException('articleIds required');
+    }
 
     const event = await this.db.models.NewsEvent.findByPk(eventId);
     if (!event) throw new NotFoundException('Event not found');
+    if (event.getDataValue('status') === EventStatus.MERGED) {
+      throw new BadRequestException('Cannot split a merged event');
+    }
 
-    const article = await this.db.models.RawArticle.findByPk(articleId);
+    const remainingBefore = await this.db.models.NewsEventArticle.count({
+      where: { eventId },
+    });
+    if (remainingBefore - uniqueArticles.length < 1) {
+      throw new BadRequestException('At least one article must remain on the source event');
+    }
+
+    const firstArticleId = uniqueArticles[0]!;
+    const article = await this.db.models.RawArticle.findByPk(firstArticleId);
     const extraction = await this.db.models.ArticleExtraction.findOne({
-      where: { articleId },
+      where: { articleId: firstArticleId },
       order: [['createdAt', 'DESC']],
     });
     const now = new Date();
     const newEventId = cryptoRandomUuid();
     const title =
-      extraction?.getDataValue('headlineFa') ??
-      article?.getDataValue('title') ??
+      newHeadline?.trim() ||
+      extraction?.getDataValue('headlineFa') ||
+      article?.getDataValue('title') ||
       'Split event';
 
     await this.db.models.NewsEvent.create({
@@ -180,37 +304,81 @@ export class EventsService {
       importanceScore: extraction?.getDataValue('importanceScore') ?? null,
       credibilityScore: extraction?.getDataValue('credibilityScore') ?? null,
       freshnessScore: extraction?.getDataValue('freshnessScore') ?? null,
-      primaryArticleId: articleId,
-      articleCount: 1,
+      primaryArticleId: firstArticleId,
+      articleCount: uniqueArticles.length,
+      independentSourceCount: 1,
       fingerprint: null,
-      metadata: { splitFrom: eventId },
+      metadata: { splitFrom: eventId, reason },
       firstSeenAt: now,
       lastSeenAt: now,
+      mergedIntoEventId: null,
     });
 
-    await link.update({
-      eventId: newEventId,
-      role: 'primary',
-      matchMethod: 'manual',
-      similarityScore: null,
-    });
-
-    await this.db.models.NewsEventConflict.update(
-      { status: 'resolved', resolvedAt: now, details: { resolution: 'split', newEventId } },
-      { where: { eventId, articleId, status: 'open' } },
-    );
+    for (const articleId of uniqueArticles) {
+      const link = await this.db.models.NewsEventArticle.findOne({
+        where: { eventId, articleId },
+      });
+      if (!link) {
+        throw new NotFoundException(`Article not linked to this event: ${articleId}`);
+      }
+      await link.update({
+        eventId: newEventId,
+        role: articleId === firstArticleId ? 'PRIMARY' : 'SUPPORTING',
+        matchMethod: 'manual',
+        similarityScore: null,
+      });
+      await this.db.models.EventTimelineItem.update(
+        { newsEventId: newEventId },
+        { where: { newsEventId: eventId, rawArticleId: articleId } },
+      );
+      await this.db.models.NewsEventConflict.update(
+        {
+          status: 'resolved',
+          resolvedAt: now,
+          details: { resolution: 'split', newEventId, reason },
+        },
+        { where: { eventId, articleId, status: 'open' } },
+      );
+    }
 
     const remaining = await this.db.models.NewsEventArticle.count({ where: { eventId } });
     await event.update({
       articleCount: remaining,
+      independentSourceCount: await this.recountIndependent(eventId),
       lastSeenAt: now,
-      status: remaining > 0 ? EventStatus.NEEDS_REVIEW : EventStatus.ARCHIVED,
+      status: EventStatus.NEEDS_REVIEW,
     });
+    await this.db.models.NewsEvent.update(
+      {
+        independentSourceCount: await this.recountIndependent(newEventId),
+      },
+      { where: { id: newEventId } },
+    );
+
+    if (actorUserId) {
+      await this.db.models.AuditLog.create({
+        id: cryptoRandomUuid(),
+        actorUserId,
+        action: 'events.split',
+        entityType: 'NewsEvent',
+        entityId: eventId,
+        before: { articleIds: uniqueArticles },
+        after: { newEventId, reason },
+        ip: null,
+      });
+    }
+
+    await this.enqueueScore(eventId);
+    await this.enqueueScore(newEventId);
 
     return {
       sourceEvent: await this.get(eventId),
       newEvent: await this.get(newEventId),
     };
+  }
+
+  async split(eventId: string, articleId: string) {
+    return this.splitMany(eventId, [articleId], 'legacy split endpoint');
   }
 
   async resolveConflict(conflictId: string, resolution: 'confirm_merge' | 'split' | 'dismiss') {
@@ -224,7 +392,7 @@ export class EventsService {
     const articleId = conflict.getDataValue('articleId');
 
     if (resolution === 'split') {
-      const result = await this.split(eventId, articleId);
+      const result = await this.splitMany(eventId, [articleId], 'conflict split');
       await conflict.update({
         status: 'resolved',
         resolvedAt: new Date(),
@@ -238,7 +406,7 @@ export class EventsService {
 
     if (resolution === 'confirm_merge') {
       await this.db.models.NewsEventArticle.update(
-        { role: 'duplicate', matchMethod: 'manual' },
+        { role: 'NEAR_DUPLICATE', matchMethod: 'manual' },
         { where: { eventId, articleId } },
       );
       await this.db.models.RawArticle.update(

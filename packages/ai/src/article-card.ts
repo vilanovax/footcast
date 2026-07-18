@@ -60,6 +60,9 @@ export const articleCardSchema = z.object({
   freshnessScore: z.number().int().min(0).max(100),
   nationalRelevanceScore: z.number().int().min(0).max(100),
   duplicateProbability: z.number().min(0).max(1),
+  /** Lifecycle action within eventType, e.g. NEGOTIATION_STARTED */
+  action: z.string().min(2).max(64).nullable().optional(),
+  matchId: z.string().nullable().optional(),
   publishedAt: z.string().nullable().optional(),
   eventOccurredAt: z.string().nullable().optional(),
   sourceName: z.string().optional(),

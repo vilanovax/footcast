@@ -184,6 +184,12 @@ export class SourcesController {
     return this.sourcesService.list(Number(page), Number(pageSize));
   }
 
+  @Post('crawl-all')
+  @RequirePermissions('sources:write')
+  crawlAll() {
+    return this.sourcesService.triggerCrawlAll();
+  }
+
   @Get(':id')
   @RequirePermissions('sources:read')
   get(@Param('id', ParseUUIDPipe) id: string) {

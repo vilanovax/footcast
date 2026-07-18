@@ -225,4 +225,53 @@ export class SourcesService {
 
     return { queued: true, crawlRunId, jobId: String(job.id) };
   }
+
+  /** Queue manual crawl for every active source (on-demand news search). */
+  async triggerCrawlAll() {
+    const sources = await this.db.models.Source.findAll({
+      where: { isActive: true },
+      attributes: ['id', 'name'],
+      order: [
+        ['priority', 'ASC'],
+        ['name', 'ASC'],
+      ],
+    });
+    const results: Array<{
+      sourceId: string;
+      name: string;
+      queued: boolean;
+      message?: string;
+    }> = [];
+    let queued = 0;
+    let skipped = 0;
+    for (const source of sources) {
+      const sourceId = source.getDataValue('id');
+      const name = source.getDataValue('name');
+      try {
+        const res = await this.triggerCrawl(sourceId);
+        if (res.queued) queued += 1;
+        else skipped += 1;
+        results.push({
+          sourceId,
+          name,
+          queued: res.queued,
+          message: 'message' in res ? String(res.message) : undefined,
+        });
+      } catch (err) {
+        skipped += 1;
+        results.push({
+          sourceId,
+          name,
+          queued: false,
+          message: err instanceof Error ? err.message : 'failed',
+        });
+      }
+    }
+    return {
+      totalSources: sources.length,
+      queued,
+      skipped,
+      results,
+    };
+  }
 }

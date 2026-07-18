@@ -73,10 +73,37 @@ Auth: `Authorization: Bearer <access_token>`
 | GET | `/editorial/decisions` | تاریخچه تصمیم‌ها |
 | GET | `/editorial/events/:id` | جزئیات برای review |
 | POST | `/editorial/events/:id/score` | امتیازدهی (`?sync=1` همزمان) |
+| POST | `/editorial/events/:id/score-override` | override دستی امتیاز نهایی |
+| DELETE | `/editorial/events/:id/score-override` | لغو override فعال |
 | POST | `/editorial/events/:id/approve` | تأیید |
 | POST | `/editorial/events/:id/reject` | رد |
 | POST | `/editorial/events/:id/decide` | approve/reject یکپارچه |
 | POST | `/editorial/events/:id/notes` | یادداشت سردبیر |
+| GET | `/editorial/coverage/today` | Coverage Intelligence امروز |
+| GET | `/editorial/days/:editorialDate/coverage` | پوشش یک روز سردبیری |
+| GET | `/editorial/rundowns/:rundownId/coverage` | پوشش یک DailyRundown |
+| POST | `/sources/crawl-all` | خزش فوری همه منابع فعال |
+| GET | `/waves` | موج‌های استخراج روز |
+| POST | `/waves/open` | باز کردن / گرفتن موج RUNNING |
+| POST | `/waves/backfill` | پر کردن موج از خبرهای باز صندوق |
+| GET | `/waves/:id/inbox` | صندوق دلتای موج (`tab=unseen\|new\|…`) |
+| POST | `/waves/observations/mark-seen` | علامت دیده‌شده |
+| POST | `/waves/:id/complete` | اتمام موج |
+| GET | `/rundown/today` | سبد امروز (+ coverage) |
+| POST | `/rundown/today/items` | افزودن Event به سبد |
+| PATCH | `/rundown/items/:id` | Pin / Lead / section |
+| DELETE | `/rundown/items/:id` | حذف نرم از سبد (REMOVED) |
+| POST | `/rundown/today/lock` | قفل سردبیری ۱۶:۰۰ |
+| POST | `/rundown/today/reopen` | بازگشایی با دلیل |
+| GET | `/rundown/today/replace-suggestions` | پیشنهاد REPLACE |
+| POST | `/rundown/today/replace` | اعمال جایگزینی |
+
+### فیلترهای Inbox
+
+`status`, `scope`, `category`, `officialStatus`, `q`, `from`, `to`,  
+`sourceId` (contains: NewsEvent→Article→Source),  
+`minFinalScore` / `minImportance` (legacy), `minCredibilityScore`,  
+`recommendation`, `hasManualOverride=true`
 | GET | `/podcasts` | لیست اپیزودها |
 | POST | `/podcasts` | ساخت اپیزود (+ eventIds اختیاری) |
 | GET | `/podcasts/:id` | جزئیات اپیزود / items / scripts |

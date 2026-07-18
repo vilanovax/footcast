@@ -33,7 +33,11 @@ const TRANSITIONS: Record<ArticleStatus, ArticleStatus[]> = {
     ArticleStatus.DISCOVERED,
     ArticleStatus.EXTRACTING,
   ],
-  [ArticleStatus.DUPLICATE]: [ArticleStatus.ARCHIVED, ArticleStatus.DISCOVERED],
+  [ArticleStatus.DUPLICATE]: [
+    ArticleStatus.ARCHIVED,
+    ArticleStatus.DISCOVERED,
+    ArticleStatus.EXTRACTING, // re-extract after clustering
+  ],
   [ArticleStatus.FAILED]: [
     ArticleStatus.DISCOVERED,
     ArticleStatus.FETCHING,
@@ -77,6 +81,7 @@ export function canExtract(status: ArticleStatus): boolean {
   return [
     ArticleStatus.PARSED,
     ArticleStatus.EXTRACTED,
+    ArticleStatus.DUPLICATE,
     ArticleStatus.IRRELEVANT,
     ArticleStatus.FAILED,
   ].includes(status);

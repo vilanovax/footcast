@@ -141,6 +141,17 @@ interface AiCompletionResult {
 
 داشبورد: امروز، ماه، per episode/source/model/stage، میانگین extract و podcast.
 
+## Clustering AI Boundary (PR-B)
+
+- Interface: `ClusterAiJudge` در `@footcast/event-clustering`
+- Adapter واقعی: `HttpClusterAiJudge` (OpenAI-compatible JSON)
+- Feature flag: `CLUSTER_AI_JUDGE_ENABLED` (پیش‌فرض `false`)
+- فقط در بازه similarity مرزی + entity/category gate؛ exact/near قطعی از AI رد نمی‌شوند
+- خروجی با `validateAiBoundaryResult`؛ failure یا confidence `< 0.80` → Create / Needs Review
+- Embedding: `EMBEDDING_PROVIDER=mock|openai`؛ mock در production با `EMBEDDING_ALLOW_MOCK=false` fail-fast
+
+جزئیات ارزیابی: `CLUSTERING_EVALUATION.md`.
+
 ## محدودیت‌ها
 
 - نتایج مسابقه از API رسمی — نه LLM به‌عنوان حقیقت

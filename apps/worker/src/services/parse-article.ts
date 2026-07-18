@@ -10,15 +10,23 @@ import type { Logger } from '@footcast/logger';
 import type { ExtractArticleJobData, ParseArticleJobData, Queue } from '@footcast/queue';
 import { ArticleStatus } from '@footcast/shared';
 
+function monorepoRoot(): string {
+  return path.resolve(process.cwd(), '../..');
+}
+
 function storageRoot(): string {
-  return process.env.RAW_STORAGE_PATH || path.resolve(process.cwd(), '../../data/raw-html');
+  const raw = process.env.RAW_STORAGE_PATH || 'data/raw-html';
+  if (path.isAbsolute(raw)) return raw;
+  return path.resolve(monorepoRoot(), raw);
 }
 
 function resolveHtmlPath(articleId: string, storagePath: string | null): string {
   if (storagePath) {
-    return path.isAbsolute(storagePath)
-      ? storagePath
-      : path.resolve(process.cwd(), storagePath);
+    if (path.isAbsolute(storagePath)) return storagePath;
+    // Old rows may store "./data/raw-html/…" relative to whatever cwd wrote them
+    const cleaned = storagePath.replace(/^\.\//, '');
+    const fromRoot = path.resolve(monorepoRoot(), cleaned);
+    return fromRoot;
   }
   return path.join(storageRoot(), `${articleId}.html`);
 }

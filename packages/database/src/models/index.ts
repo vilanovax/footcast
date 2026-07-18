@@ -28,7 +28,24 @@ import type {
   EditorialNoteAttrs,
   EditorialRuleAttrs,
   EditorialScoreAttrs,
+  EditorialScoreOverrideAttrs,
+  EntityAliasAttrs,
+  EntityAttrs,
+  EventTimelineItemAttrs,
+  ClusterDecisionLogAttrs,
+  ClusteringEvaluationAttrs,
+  CompetitionAttrs,
+  CoverageTargetAttrs,
+  DailyRundownAttrs,
+  DailyRundownItemAttrs,
+  EditorialEntityWeightAttrs,
+  EditorialTeamAttrs,
+  IntakeWaveAttrs,
   NewsEventArticleAttrs,
+  NewsEventCompetitionAttrs,
+  NewsEventTeamAttrs,
+  NewsEventTrackedEventAttrs,
+  TrackedEventAttrs,
   NewsEventAttrs,
   NewsEventConflictAttrs,
   NotificationAttrs,
@@ -47,6 +64,7 @@ import type {
   SourceFeedAttrs,
   SourceHealthAttrs,
   UserAttrs,
+  WaveEventObservationAttrs,
 } from './types.js';
 
 export type DbModels = {
@@ -69,9 +87,15 @@ export type DbModels = {
   NewsEvent: ModelStatic<Model<NewsEventAttrs>>;
   NewsEventArticle: ModelStatic<Model<NewsEventArticleAttrs>>;
   NewsEventConflict: ModelStatic<Model<NewsEventConflictAttrs>>;
+  EventTimelineItem: ModelStatic<Model<EventTimelineItemAttrs>>;
+  ClusterDecisionLog: ModelStatic<Model<ClusterDecisionLogAttrs>>;
+  ClusteringEvaluation: ModelStatic<Model<ClusteringEvaluationAttrs>>;
+  Entity: ModelStatic<Model<EntityAttrs>>;
+  EntityAlias: ModelStatic<Model<EntityAliasAttrs>>;
   ArticleEmbedding: ModelStatic<Model<ArticleEmbeddingAttrs>>;
   EditorialRule: ModelStatic<Model<EditorialRuleAttrs>>;
   EditorialScore: ModelStatic<Model<EditorialScoreAttrs>>;
+  EditorialScoreOverride: ModelStatic<Model<EditorialScoreOverrideAttrs>>;
   EditorialDecision: ModelStatic<Model<EditorialDecisionAttrs>>;
   EditorialNote: ModelStatic<Model<EditorialNoteAttrs>>;
   PodcastEpisode: ModelStatic<Model<PodcastEpisodeAttrs>>;
@@ -79,6 +103,18 @@ export type DbModels = {
   PodcastScriptVersion: ModelStatic<Model<PodcastScriptVersionAttrs>>;
   PodcastAudio: ModelStatic<Model<PodcastAudioAttrs>>;
   PodcastPublication: ModelStatic<Model<PodcastPublicationAttrs>>;
+  IntakeWave: ModelStatic<Model<IntakeWaveAttrs>>;
+  WaveEventObservation: ModelStatic<Model<WaveEventObservationAttrs>>;
+  DailyRundown: ModelStatic<Model<DailyRundownAttrs>>;
+  DailyRundownItem: ModelStatic<Model<DailyRundownItemAttrs>>;
+  EditorialTeam: ModelStatic<Model<EditorialTeamAttrs>>;
+  Competition: ModelStatic<Model<CompetitionAttrs>>;
+  TrackedEvent: ModelStatic<Model<TrackedEventAttrs>>;
+  NewsEventTeam: ModelStatic<Model<NewsEventTeamAttrs>>;
+  NewsEventCompetition: ModelStatic<Model<NewsEventCompetitionAttrs>>;
+  NewsEventTrackedEvent: ModelStatic<Model<NewsEventTrackedEventAttrs>>;
+  CoverageTarget: ModelStatic<Model<CoverageTargetAttrs>>;
+  EditorialEntityWeight: ModelStatic<Model<EditorialEntityWeightAttrs>>;
   Notification: ModelStatic<Model<NotificationAttrs>>;
   AppSetting: ModelStatic<Model<AppSettingAttrs>>;
   AuditLog: ModelStatic<Model<AuditLogAttrs>>;
@@ -431,8 +467,20 @@ export function initModels(sequelize: Sequelize): DbModels {
       importanceScore: { type: DataTypes.INTEGER, allowNull: true },
       credibilityScore: { type: DataTypes.INTEGER, allowNull: true },
       freshnessScore: { type: DataTypes.INTEGER, allowNull: true },
+      podcastValueScore: { type: DataTypes.FLOAT, allowNull: true },
+      effectiveFinalScore: { type: DataTypes.FLOAT, allowNull: true },
+      recommendation: { type: DataTypes.STRING(64), allowNull: true },
       primaryArticleId: { type: DataTypes.UUID, allowNull: true },
       articleCount: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 1 },
+      independentSourceCount: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 1,
+      },
+      eventAction: { type: DataTypes.STRING(64), allowNull: true },
+      eventSignature: { type: DataTypes.JSONB, allowNull: true },
+      latestDevelopmentSummary: { type: DataTypes.TEXT, allowNull: true },
+      mergedIntoEventId: { type: DataTypes.UUID, allowNull: true },
       fingerprint: { type: DataTypes.STRING(64), allowNull: true },
       metadata: { type: DataTypes.JSONB, allowNull: true },
       firstSeenAt: { type: DataTypes.DATE, allowNull: false },
@@ -448,11 +496,100 @@ export function initModels(sequelize: Sequelize): DbModels {
       eventId: { type: DataTypes.UUID, allowNull: false },
       articleId: { type: DataTypes.UUID, allowNull: false, unique: true },
       extractionId: { type: DataTypes.UUID, allowNull: true },
-      role: { type: DataTypes.STRING(32), allowNull: false, defaultValue: 'primary' },
+      role: { type: DataTypes.STRING(32), allowNull: false, defaultValue: 'PRIMARY' },
       matchMethod: { type: DataTypes.STRING(32), allowNull: true },
       similarityScore: { type: DataTypes.FLOAT, allowNull: true },
+      relationshipDecision: { type: DataTypes.STRING(64), allowNull: true },
+      similarityBreakdown: { type: DataTypes.JSONB, allowNull: true },
     },
     { tableName: 'news_event_articles', underscored: true },
+  );
+
+  const EventTimelineItem = sequelize.define<Model<EventTimelineItemAttrs>>(
+    'EventTimelineItem',
+    {
+      id: { type: DataTypes.UUID, primaryKey: true },
+      newsEventId: { type: DataTypes.UUID, allowNull: false },
+      rawArticleId: { type: DataTypes.UUID, allowNull: true },
+      sourceId: { type: DataTypes.UUID, allowNull: true },
+      developmentType: { type: DataTypes.STRING(64), allowNull: false },
+      action: { type: DataTypes.STRING(64), allowNull: true },
+      summary: { type: DataTypes.TEXT, allowNull: false },
+      occurredAt: { type: DataTypes.DATE, allowNull: true },
+      publishedAt: { type: DataTypes.DATE, allowNull: true },
+      isMajorDevelopment: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+    },
+    { tableName: 'event_timeline_items', underscored: true },
+  );
+
+  const ClusterDecisionLog = sequelize.define<Model<ClusterDecisionLogAttrs>>(
+    'ClusterDecisionLog',
+    {
+      id: { type: DataTypes.UUID, primaryKey: true },
+      rawArticleId: { type: DataTypes.UUID, allowNull: false },
+      selectedEventId: { type: DataTypes.UUID, allowNull: true },
+      decision: { type: DataTypes.STRING(32), allowNull: false },
+      relationship: { type: DataTypes.STRING(64), allowNull: true },
+      finalSimilarity: { type: DataTypes.FLOAT, allowNull: true },
+      similarityBreakdown: { type: DataTypes.JSONB, allowNull: true },
+      candidateSnapshot: { type: DataTypes.JSONB, allowNull: true },
+      thresholdPolicyVersion: { type: DataTypes.STRING(32), allowNull: false },
+      aiUsed: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+      aiProvider: { type: DataTypes.STRING(64), allowNull: true },
+      aiModel: { type: DataTypes.STRING(64), allowNull: true },
+      aiConfidence: { type: DataTypes.FLOAT, allowNull: true },
+      reason: { type: DataTypes.TEXT, allowNull: true },
+      processingDurationMs: { type: DataTypes.INTEGER, allowNull: true },
+    },
+    { tableName: 'cluster_decision_logs', underscored: true, updatedAt: false },
+  );
+
+  const ClusteringEvaluation = sequelize.define<Model<ClusteringEvaluationAttrs>>(
+    'ClusteringEvaluation',
+    {
+      id: { type: DataTypes.UUID, primaryKey: true },
+      rawArticleId: { type: DataTypes.UUID, allowNull: false },
+      predictedEventId: { type: DataTypes.UUID, allowNull: true },
+      predictedRelationship: { type: DataTypes.STRING(64), allowNull: true },
+      predictedScore: { type: DataTypes.FLOAT, allowNull: true },
+      expectedEventId: { type: DataTypes.UUID, allowNull: true },
+      expectedRelationship: { type: DataTypes.STRING(64), allowNull: false },
+      verdict: { type: DataTypes.STRING(64), allowNull: false },
+      reviewerId: { type: DataTypes.UUID, allowNull: true },
+      note: { type: DataTypes.TEXT, allowNull: true },
+      decisionLogId: { type: DataTypes.UUID, allowNull: true },
+    },
+    { tableName: 'clustering_evaluations', underscored: true },
+  );
+
+  const Entity = sequelize.define<Model<EntityAttrs>>(
+    'Entity',
+    {
+      id: { type: DataTypes.UUID, primaryKey: true },
+      type: { type: DataTypes.STRING(32), allowNull: false },
+      canonicalName: { type: DataTypes.STRING(255), allowNull: false },
+      normalizedName: { type: DataTypes.STRING(255), allowNull: false },
+      externalId: { type: DataTypes.STRING(128), allowNull: true },
+      isActive: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
+    },
+    { tableName: 'entities', underscored: true },
+  );
+
+  const EntityAlias = sequelize.define<Model<EntityAliasAttrs>>(
+    'EntityAlias',
+    {
+      id: { type: DataTypes.UUID, primaryKey: true },
+      entityId: { type: DataTypes.UUID, allowNull: false },
+      alias: { type: DataTypes.STRING(255), allowNull: false },
+      normalizedAlias: { type: DataTypes.STRING(255), allowNull: false },
+      language: { type: DataTypes.STRING(8), allowNull: true },
+      sourceId: { type: DataTypes.UUID, allowNull: true },
+    },
+    { tableName: 'entity_aliases', underscored: true },
   );
 
   const NewsEventConflict = sequelize.define<Model<NewsEventConflictAttrs>>(
@@ -503,14 +640,43 @@ export function initModels(sequelize: Sequelize): DbModels {
     {
       id: { type: DataTypes.UUID, primaryKey: true },
       eventId: { type: DataTypes.UUID, allowNull: false },
-      finalScore: { type: DataTypes.INTEGER, allowNull: false },
+      finalScore: { type: DataTypes.FLOAT, allowNull: false },
+      credibilityScore: { type: DataTypes.FLOAT, allowNull: true },
+      importanceScore: { type: DataTypes.FLOAT, allowNull: true },
+      podcastValueScore: { type: DataTypes.FLOAT, allowNull: true },
+      rawFinalScore: { type: DataTypes.FLOAT, allowNull: true },
+      totalBonus: { type: DataTypes.FLOAT, allowNull: false, defaultValue: 0 },
+      totalPenalty: { type: DataTypes.FLOAT, allowNull: false, defaultValue: 0 },
+      recommendation: { type: DataTypes.STRING(64), allowNull: true },
       factors: { type: DataTypes.JSONB, allowNull: false },
       penalties: { type: DataTypes.JSONB, allowNull: false },
       ruleHits: { type: DataTypes.JSONB, allowNull: false },
       breakdown: { type: DataTypes.JSONB, allowNull: true },
+      reasons: { type: DataTypes.JSONB, allowNull: true },
+      bonuses: { type: DataTypes.JSONB, allowNull: true },
+      penaltyItems: { type: DataTypes.JSONB, allowNull: true },
+      inputSnapshot: { type: DataTypes.JSONB, allowNull: true },
       scorerVersion: { type: DataTypes.STRING(32), allowNull: false, defaultValue: '1.0.0' },
     },
     { tableName: 'editorial_scores', underscored: true },
+  );
+
+  const EditorialScoreOverride = sequelize.define<Model<EditorialScoreOverrideAttrs>>(
+    'EditorialScoreOverride',
+    {
+      id: { type: DataTypes.UUID, primaryKey: true },
+      newsEventId: { type: DataTypes.UUID, allowNull: false },
+      automaticFinalScore: { type: DataTypes.FLOAT, allowNull: false },
+      overriddenFinalScore: { type: DataTypes.FLOAT, allowNull: false },
+      reason: { type: DataTypes.TEXT, allowNull: false },
+      userId: { type: DataTypes.UUID, allowNull: true },
+      revokedAt: { type: DataTypes.DATE, allowNull: true },
+    },
+    {
+      tableName: 'editorial_score_overrides',
+      underscored: true,
+      updatedAt: false,
+    },
   );
 
   const EditorialDecision = sequelize.define<Model<EditorialDecisionAttrs>>(
@@ -691,8 +857,380 @@ export function initModels(sequelize: Sequelize): DbModels {
   NewsEventArticle.belongsTo(RawArticle, { foreignKey: 'articleId', as: 'article' });
   NewsEvent.hasMany(NewsEventConflict, { foreignKey: 'eventId', as: 'conflicts' });
   NewsEventConflict.belongsTo(NewsEvent, { foreignKey: 'eventId', as: 'event' });
+  NewsEvent.hasMany(EventTimelineItem, {
+    foreignKey: 'newsEventId',
+    as: 'timelineItems',
+  });
+  EventTimelineItem.belongsTo(NewsEvent, {
+    foreignKey: 'newsEventId',
+    as: 'event',
+  });
+  NewsEvent.belongsTo(NewsEvent, {
+    foreignKey: 'mergedIntoEventId',
+    as: 'mergedInto',
+  });
+  ClusterDecisionLog.belongsTo(RawArticle, {
+    foreignKey: 'rawArticleId',
+    as: 'article',
+  });
+  ClusterDecisionLog.belongsTo(NewsEvent, {
+    foreignKey: 'selectedEventId',
+    as: 'selectedEvent',
+  });
+  ClusteringEvaluation.belongsTo(RawArticle, {
+    foreignKey: 'rawArticleId',
+    as: 'article',
+  });
+  ClusteringEvaluation.belongsTo(ClusterDecisionLog, {
+    foreignKey: 'decisionLogId',
+    as: 'decisionLog',
+  });
+
+  const IntakeWave = sequelize.define<Model<IntakeWaveAttrs>>(
+    'IntakeWave',
+    {
+      id: { type: DataTypes.UUID, primaryKey: true },
+      editorialDate: { type: DataTypes.DATEONLY, allowNull: false },
+      timezone: {
+        type: DataTypes.STRING(64),
+        allowNull: false,
+        defaultValue: 'Asia/Tehran',
+      },
+      label: { type: DataTypes.STRING(120), allowNull: false },
+      profile: {
+        type: DataTypes.STRING(32),
+        allowNull: false,
+        defaultValue: 'FULL',
+      },
+      scheduledAt: { type: DataTypes.DATE, allowNull: true },
+      startedAt: { type: DataTypes.DATE, allowNull: true },
+      completedAt: { type: DataTypes.DATE, allowNull: true },
+      status: {
+        type: DataTypes.STRING(32),
+        allowNull: false,
+        defaultValue: 'RUNNING',
+      },
+      sourcesChecked: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+      articlesDiscovered: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+      articlesNew: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+      exactDuplicates: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+      nearDuplicates: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+      eventsCreated: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+      eventsUpdated: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+      failedSources: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+      metadata: { type: DataTypes.JSONB, allowNull: true },
+    },
+    { tableName: 'intake_waves', underscored: true },
+  );
+
+  const WaveEventObservation = sequelize.define<Model<WaveEventObservationAttrs>>(
+    'WaveEventObservation',
+    {
+      id: { type: DataTypes.UUID, primaryKey: true },
+      waveId: { type: DataTypes.UUID, allowNull: false },
+      newsEventId: { type: DataTypes.UUID, allowNull: false },
+      observationType: { type: DataTypes.STRING(64), allowNull: false },
+      previousVersionId: { type: DataTypes.UUID, allowNull: true },
+      currentVersionId: { type: DataTypes.UUID, allowNull: true },
+      rawArticleIds: { type: DataTypes.JSONB, allowNull: true },
+      detectedAt: { type: DataTypes.DATE, allowNull: false },
+      isSeenByEditor: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      seenAt: { type: DataTypes.DATE, allowNull: true },
+      significanceScore: { type: DataTypes.FLOAT, allowNull: true },
+      summary: { type: DataTypes.TEXT, allowNull: true },
+      metadata: { type: DataTypes.JSONB, allowNull: true },
+    },
+    { tableName: 'wave_event_observations', underscored: true },
+  );
+
+  const DailyRundown = sequelize.define<Model<DailyRundownAttrs>>(
+    'DailyRundown',
+    {
+      id: { type: DataTypes.UUID, primaryKey: true },
+      editorialDate: { type: DataTypes.DATEONLY, allowNull: false, unique: true },
+      timezone: {
+        type: DataTypes.STRING(64),
+        allowNull: false,
+        defaultValue: 'Asia/Tehran',
+      },
+      deadlineAt: { type: DataTypes.DATE, allowNull: false },
+      status: {
+        type: DataTypes.STRING(32),
+        allowNull: false,
+        defaultValue: 'COLLECTING',
+      },
+      targetDurationSeconds: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 600,
+      },
+      lockedAt: { type: DataTypes.DATE, allowNull: true },
+      lockedBy: { type: DataTypes.UUID, allowNull: true },
+      finalizedAt: { type: DataTypes.DATE, allowNull: true },
+      reopenReason: { type: DataTypes.TEXT, allowNull: true },
+      metadata: { type: DataTypes.JSONB, allowNull: true },
+    },
+    { tableName: 'daily_rundowns', underscored: true },
+  );
+
+  const DailyRundownItem = sequelize.define<Model<DailyRundownItemAttrs>>(
+    'DailyRundownItem',
+    {
+      id: { type: DataTypes.UUID, primaryKey: true },
+      rundownId: { type: DataTypes.UUID, allowNull: false },
+      newsEventId: { type: DataTypes.UUID, allowNull: false },
+      status: {
+        type: DataTypes.STRING(32),
+        allowNull: false,
+        defaultValue: 'SHORTLISTED',
+      },
+      section: {
+        type: DataTypes.STRING(32),
+        allowNull: false,
+        defaultValue: 'MAIN',
+      },
+      editorialPriority: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 50,
+      },
+      effectiveScore: { type: DataTypes.FLOAT, allowNull: true },
+      estimatedDurationSeconds: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 60,
+      },
+      position: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+      addedBy: { type: DataTypes.UUID, allowNull: true },
+      addedAt: { type: DataTypes.DATE, allowNull: false },
+      removedAt: { type: DataTypes.DATE, allowNull: true },
+      removalReason: { type: DataTypes.TEXT, allowNull: true },
+      isLeadStory: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      isPinned: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      editorNote: { type: DataTypes.TEXT, allowNull: true },
+    },
+    { tableName: 'daily_rundown_items', underscored: true },
+  );
+
+  IntakeWave.hasMany(WaveEventObservation, {
+    foreignKey: 'waveId',
+    as: 'observations',
+  });
+  WaveEventObservation.belongsTo(IntakeWave, {
+    foreignKey: 'waveId',
+    as: 'wave',
+  });
+  WaveEventObservation.belongsTo(NewsEvent, {
+    foreignKey: 'newsEventId',
+    as: 'event',
+  });
+  NewsEvent.hasMany(WaveEventObservation, {
+    foreignKey: 'newsEventId',
+    as: 'waveObservations',
+  });
+  DailyRundown.hasMany(DailyRundownItem, {
+    foreignKey: 'rundownId',
+    as: 'items',
+  });
+  DailyRundownItem.belongsTo(DailyRundown, {
+    foreignKey: 'rundownId',
+    as: 'rundown',
+  });
+  DailyRundownItem.belongsTo(NewsEvent, {
+    foreignKey: 'newsEventId',
+    as: 'event',
+  });
+  NewsEvent.hasMany(DailyRundownItem, {
+    foreignKey: 'newsEventId',
+    as: 'rundownItems',
+  });
+
+  const EditorialTeam = sequelize.define<Model<EditorialTeamAttrs>>(
+    'EditorialTeam',
+    {
+      id: { type: DataTypes.UUID, primaryKey: true },
+      slug: { type: DataTypes.STRING(64), allowNull: false, unique: true },
+      nameFa: { type: DataTypes.STRING(120), allowNull: false },
+      nameEn: { type: DataTypes.STRING(120), allowNull: true },
+      scope: { type: DataTypes.STRING(32), allowNull: true },
+      isKeyTeam: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
+      aliases: { type: DataTypes.JSONB, allowNull: true },
+      isActive: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
+    },
+    { tableName: 'editorial_teams', underscored: true },
+  );
+
+  const Competition = sequelize.define<Model<CompetitionAttrs>>(
+    'Competition',
+    {
+      id: { type: DataTypes.UUID, primaryKey: true },
+      slug: { type: DataTypes.STRING(64), allowNull: false, unique: true },
+      nameFa: { type: DataTypes.STRING(120), allowNull: false },
+      nameEn: { type: DataTypes.STRING(120), allowNull: true },
+      kind: { type: DataTypes.STRING(32), allowNull: false, defaultValue: 'LEAGUE' },
+      region: { type: DataTypes.STRING(32), allowNull: true },
+      aliases: { type: DataTypes.JSONB, allowNull: true },
+      isActive: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
+    },
+    { tableName: 'competitions', underscored: true },
+  );
+
+  const TrackedEvent = sequelize.define<Model<TrackedEventAttrs>>(
+    'TrackedEvent',
+    {
+      id: { type: DataTypes.UUID, primaryKey: true },
+      slug: { type: DataTypes.STRING(64), allowNull: false, unique: true },
+      title: { type: DataTypes.STRING(200), allowNull: false },
+      type: { type: DataTypes.STRING(64), allowNull: false },
+      competitionId: { type: DataTypes.UUID, allowNull: true },
+      startsAt: { type: DataTypes.DATE, allowNull: true },
+      endsAt: { type: DataTypes.DATE, allowNull: true },
+      priority: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 50 },
+      targetNewsCount: { type: DataTypes.INTEGER, allowNull: true },
+      targetDurationSeconds: { type: DataTypes.INTEGER, allowNull: true },
+      activeBoost: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+      aliases: { type: DataTypes.JSONB, allowNull: true },
+      isActive: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
+    },
+    { tableName: 'tracked_events', underscored: true },
+  );
+
+  const NewsEventTeam = sequelize.define<Model<NewsEventTeamAttrs>>(
+    'NewsEventTeam',
+    {
+      id: { type: DataTypes.UUID, primaryKey: true },
+      newsEventId: { type: DataTypes.UUID, allowNull: false },
+      teamId: { type: DataTypes.UUID, allowNull: false },
+      role: { type: DataTypes.STRING(32), allowNull: false, defaultValue: 'PRIMARY' },
+    },
+    { tableName: 'news_event_teams', underscored: true },
+  );
+
+  const NewsEventCompetition = sequelize.define<Model<NewsEventCompetitionAttrs>>(
+    'NewsEventCompetition',
+    {
+      id: { type: DataTypes.UUID, primaryKey: true },
+      newsEventId: { type: DataTypes.UUID, allowNull: false },
+      competitionId: { type: DataTypes.UUID, allowNull: false },
+    },
+    { tableName: 'news_event_competitions', underscored: true },
+  );
+
+  const NewsEventTrackedEvent = sequelize.define<Model<NewsEventTrackedEventAttrs>>(
+    'NewsEventTrackedEvent',
+    {
+      id: { type: DataTypes.UUID, primaryKey: true },
+      newsEventId: { type: DataTypes.UUID, allowNull: false },
+      trackedEventId: { type: DataTypes.UUID, allowNull: false },
+    },
+    { tableName: 'news_event_tracked_events', underscored: true },
+  );
+
+  const CoverageTarget = sequelize.define<Model<CoverageTargetAttrs>>(
+    'CoverageTarget',
+    {
+      id: { type: DataTypes.UUID, primaryKey: true },
+      dimension: { type: DataTypes.STRING(32), allowNull: false },
+      key: { type: DataTypes.STRING(64), allowNull: false },
+      label: { type: DataTypes.STRING(120), allowNull: true },
+      minSelectedCount: { type: DataTypes.INTEGER, allowNull: true },
+      maxSelectedCount: { type: DataTypes.INTEGER, allowNull: true },
+      minDurationSeconds: { type: DataTypes.INTEGER, allowNull: true },
+      maxDurationSeconds: { type: DataTypes.INTEGER, allowNull: true },
+      priority: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 50 },
+      enforcement: {
+        type: DataTypes.STRING(16),
+        allowNull: false,
+        defaultValue: 'SOFT',
+      },
+      editorialProfileId: { type: DataTypes.STRING(64), allowNull: true },
+      isActive: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
+    },
+    { tableName: 'coverage_targets', underscored: true },
+  );
+
+  const EditorialEntityWeight = sequelize.define<Model<EditorialEntityWeightAttrs>>(
+    'EditorialEntityWeight',
+    {
+      id: { type: DataTypes.UUID, primaryKey: true },
+      entityType: { type: DataTypes.STRING(32), allowNull: false },
+      entityId: { type: DataTypes.UUID, allowNull: false },
+      entityKey: { type: DataTypes.STRING(64), allowNull: false },
+      baseWeight: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 50 },
+      audienceWeight: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 50 },
+      eventBoost: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+      effectiveFrom: { type: DataTypes.DATE, allowNull: true },
+      effectiveTo: { type: DataTypes.DATE, allowNull: true },
+      isActive: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
+    },
+    { tableName: 'editorial_entity_weights', underscored: true },
+  );
+
+  NewsEvent.belongsToMany(EditorialTeam, {
+    through: NewsEventTeam,
+    foreignKey: 'newsEventId',
+    otherKey: 'teamId',
+    as: 'teams',
+  });
+  EditorialTeam.belongsToMany(NewsEvent, {
+    through: NewsEventTeam,
+    foreignKey: 'teamId',
+    otherKey: 'newsEventId',
+    as: 'events',
+  });
+  NewsEvent.belongsToMany(Competition, {
+    through: NewsEventCompetition,
+    foreignKey: 'newsEventId',
+    otherKey: 'competitionId',
+    as: 'competitions',
+  });
+  Competition.belongsToMany(NewsEvent, {
+    through: NewsEventCompetition,
+    foreignKey: 'competitionId',
+    otherKey: 'newsEventId',
+    as: 'events',
+  });
+  NewsEvent.belongsToMany(TrackedEvent, {
+    through: NewsEventTrackedEvent,
+    foreignKey: 'newsEventId',
+    otherKey: 'trackedEventId',
+    as: 'trackedEvents',
+  });
+  TrackedEvent.belongsToMany(NewsEvent, {
+    through: NewsEventTrackedEvent,
+    foreignKey: 'trackedEventId',
+    otherKey: 'newsEventId',
+    as: 'events',
+  });
+  TrackedEvent.belongsTo(Competition, {
+    foreignKey: 'competitionId',
+    as: 'competition',
+  });
+
+  Entity.hasMany(EntityAlias, { foreignKey: 'entityId', as: 'aliases' });
+  EntityAlias.belongsTo(Entity, { foreignKey: 'entityId', as: 'entity' });
   NewsEvent.hasMany(EditorialScore, { foreignKey: 'eventId', as: 'scores' });
   EditorialScore.belongsTo(NewsEvent, { foreignKey: 'eventId', as: 'event' });
+  NewsEvent.hasMany(EditorialScoreOverride, {
+    foreignKey: 'newsEventId',
+    as: 'scoreOverrides',
+  });
+  EditorialScoreOverride.belongsTo(NewsEvent, {
+    foreignKey: 'newsEventId',
+    as: 'event',
+  });
   NewsEvent.hasMany(EditorialDecision, { foreignKey: 'eventId', as: 'decisions' });
   EditorialDecision.belongsTo(NewsEvent, { foreignKey: 'eventId', as: 'event' });
   NewsEvent.hasMany(EditorialNote, { foreignKey: 'eventId', as: 'notes' });
@@ -741,9 +1279,15 @@ export function initModels(sequelize: Sequelize): DbModels {
     NewsEvent,
     NewsEventArticle,
     NewsEventConflict,
+    EventTimelineItem,
+    ClusterDecisionLog,
+    ClusteringEvaluation,
+    Entity,
+    EntityAlias,
     ArticleEmbedding,
     EditorialRule,
     EditorialScore,
+    EditorialScoreOverride,
     EditorialDecision,
     EditorialNote,
     PodcastEpisode,
@@ -751,6 +1295,18 @@ export function initModels(sequelize: Sequelize): DbModels {
     PodcastScriptVersion,
     PodcastAudio,
     PodcastPublication,
+    IntakeWave,
+    WaveEventObservation,
+    DailyRundown,
+    DailyRundownItem,
+    EditorialTeam,
+    Competition,
+    TrackedEvent,
+    NewsEventTeam,
+    NewsEventCompetition,
+    NewsEventTrackedEvent,
+    CoverageTarget,
+    EditorialEntityWeight,
     Notification,
     AppSetting,
     AuditLog,

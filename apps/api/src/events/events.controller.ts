@@ -6,10 +6,19 @@ import {
   ParseUUIDPipe,
   Post,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { IsIn, IsUUID } from 'class-validator';
+import {
+  ArrayMinSize,
+  IsArray,
+  IsIn,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MinLength,
+} from 'class-validator';
 import { EventStatus } from '@footcast/shared';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { PermissionsGuard } from '../auth/permissions.guard.js';
@@ -21,9 +30,38 @@ class MergeEventDto {
   targetEventId!: string;
 }
 
-class SplitEventDto {
+class MergeManyDto {
   @IsUUID()
-  articleId!: string;
+  primaryEventId!: string;
+
+  @IsArray()
+  @ArrayMinSize(1)
+  @IsUUID('4', { each: true })
+  secondaryEventIds!: string[];
+
+  @IsString()
+  @MinLength(3)
+  reason!: string;
+}
+
+class SplitBodyDto {
+  @IsOptional()
+  @IsUUID()
+  articleId?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsUUID('4', { each: true })
+  articleIds?: string[];
+
+  @IsOptional()
+  @IsString()
+  @MinLength(3)
+  reason?: string;
+
+  @IsOptional()
+  @IsString()
+  newHeadline?: string;
 }
 
 class ResolveConflictDto {
@@ -66,16 +104,56 @@ export class EventsController {
     return this.eventsService.listArticles(id);
   }
 
+  @Post('events/merge')
+  @RequirePermissions('events:merge')
+  mergeMany(
+    @Body() body: MergeManyDto,
+    @Req() req: { user: { userId: string } },
+  ) {
+    return this.eventsService.mergeMany(
+      body.primaryEventId,
+      body.secondaryEventIds,
+      body.reason,
+      req.user.userId,
+    );
+  }
+
   @Post('events/:id/merge')
   @RequirePermissions('events:merge')
-  merge(@Param('id', ParseUUIDPipe) id: string, @Body() body: MergeEventDto) {
-    return this.eventsService.merge(id, body.targetEventId);
+  merge(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: MergeEventDto,
+    @Req() req: { user: { userId: string } },
+  ) {
+    // legacy: :id is source, body.target is primary destination
+    return this.eventsService.mergeMany(
+      body.targetEventId,
+      [id],
+      'legacy merge endpoint',
+      req.user.userId,
+    );
   }
 
   @Post('events/:id/split')
   @RequirePermissions('events:merge')
-  split(@Param('id', ParseUUIDPipe) id: string, @Body() body: SplitEventDto) {
-    return this.eventsService.split(id, body.articleId);
+  split(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: SplitBodyDto,
+    @Req() req: { user: { userId: string } },
+  ) {
+    const ids =
+      body.articleIds && body.articleIds.length > 0
+        ? body.articleIds
+        : body.articleId
+          ? [body.articleId]
+          : [];
+    return this.eventsService.splitMany(
+      id,
+      ids,
+      body.reason ?? 'manual split',
+      body.newHeadline,
+      req.user.userId,
+    );
   }
 
   @Post('events/conflicts/:id/resolve')

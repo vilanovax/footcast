@@ -4,6 +4,16 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { API_BASE, apiFetch, clearTokens, getToken } from '../../../lib/api';
+import { formatJalali } from '../../../lib/dates';
+import {
+  episodeStatusTone,
+  labelEpisodeStatus,
+  labelEventStatus,
+  podcastProgress,
+  type PodcastStepId,
+} from '../../../lib/labels';
+import { NextActionBar, PodcastStepper } from '../../../components/PodcastStepper';
+import { StatusBadge } from '../../../components/StatusBadge';
 
 type EpisodeDetail = {
   id: string;
@@ -73,6 +83,7 @@ export default function PodcastDetailPage() {
   const [episode, setEpisode] = useState<EpisodeDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [busyLabel, setBusyLabel] = useState('لطفاً صبر کنید…');
 
   const load = useCallback(async () => {
     if (!getToken()) {
@@ -96,93 +107,62 @@ export default function PodcastDetailPage() {
     void load();
   }, [load]);
 
-  async function generate() {
+  async function runAction(action: PodcastStepId) {
     setBusy(true);
     setError(null);
     try {
-      await apiFetch(`/podcasts/${id}/generate-script`, { method: 'POST', body: '{}' });
-      const next = await pollUntil(
-        id,
-        (ep) =>
-          ep.status === 'SCRIPT_READY' ||
-          ep.status === 'SCRIPT_REVIEWED' ||
-          ep.status === 'FAILED' ||
-          (ep.scripts?.length ?? 0) > 0,
-      );
-      setEpisode(next);
+      if (action === 'script') {
+        setBusyLabel('در حال نوشتن متن…');
+        await apiFetch(`/podcasts/${id}/generate-script`, { method: 'POST', body: '{}' });
+        const next = await pollUntil(
+          id,
+          (ep) =>
+            ep.status === 'SCRIPT_READY' ||
+            ep.status === 'SCRIPT_REVIEWED' ||
+            ep.status === 'FAILED' ||
+            (ep.scripts?.length ?? 0) > 0,
+        );
+        setEpisode(next);
+      } else if (action === 'review') {
+        setBusyLabel('تأیید متن…');
+        const res = await apiFetch<EpisodeDetail>(`/podcasts/${id}/approve-script`, {
+          method: 'POST',
+          body: '{}',
+        });
+        setEpisode(res.data);
+      } else if (action === 'approve') {
+        setBusyLabel('تأیید اپیزود…');
+        const res = await apiFetch<EpisodeDetail>(`/podcasts/${id}/approve`, {
+          method: 'POST',
+          body: '{}',
+        });
+        setEpisode(res.data);
+      } else if (action === 'audio') {
+        setBusyLabel('در حال ساخت صدا…');
+        await apiFetch(`/podcasts/${id}/generate-audio`, { method: 'POST', body: '{}' });
+        const next = await pollUntil(
+          id,
+          (ep) =>
+            ep.status === 'AUDIO_READY' ||
+            ep.status === 'FAILED' ||
+            (ep.audios?.some((a) => a.status === 'ready') ?? false),
+          16,
+          900,
+        );
+        setEpisode(next);
+      } else if (action === 'publish') {
+        setBusyLabel('در حال انتشار…');
+        await apiFetch(`/podcasts/${id}/publish`, { method: 'POST', body: '{}' });
+        const next = await pollUntil(
+          id,
+          (ep) => ep.status === 'PUBLISHED' || Boolean(ep.publication),
+          12,
+          700,
+        );
+        setEpisode(next);
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'تولید اسکریپت ناموفق');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function approveScript() {
-    setBusy(true);
-    try {
-      const res = await apiFetch<EpisodeDetail>(`/podcasts/${id}/approve-script`, {
-        method: 'POST',
-        body: '{}',
-      });
-      setEpisode(res.data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'تأیید اسکریپت ناموفق');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function approveEpisode() {
-    setBusy(true);
-    try {
-      const res = await apiFetch<EpisodeDetail>(`/podcasts/${id}/approve`, {
-        method: 'POST',
-        body: '{}',
-      });
-      setEpisode(res.data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'تأیید اپیزود ناموفق');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function generateAudio() {
-    setBusy(true);
-    setError(null);
-    try {
-      await apiFetch(`/podcasts/${id}/generate-audio`, { method: 'POST', body: '{}' });
-      const next = await pollUntil(
-        id,
-        (ep) =>
-          ep.status === 'AUDIO_READY' ||
-          ep.status === 'FAILED' ||
-          (ep.audios?.some((a) => a.status === 'ready') ?? false),
-        16,
-        900,
-      );
-      setEpisode(next);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'تولید صدا ناموفق');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function publish() {
-    setBusy(true);
-    setError(null);
-    try {
-      await apiFetch(`/podcasts/${id}/publish`, { method: 'POST', body: '{}' });
-      const next = await pollUntil(
-        id,
-        (ep) => ep.status === 'PUBLISHED' || Boolean(ep.publication),
-        12,
-        700,
-      );
-      setEpisode(next);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'انتشار ناموفق');
+      setError(err instanceof Error ? err.message : 'عملیات ناموفق');
     } finally {
       setBusy(false);
     }
@@ -192,53 +172,73 @@ export default function PodcastDetailPage() {
   const audio = episode?.audios?.[0];
   const minutes = script ? Math.round((script.estimatedDurationSec / 60) * 10) / 10 : null;
   const audioSrc = `${API_BASE}/podcasts/${id}/audio/file`;
-  const canAudio =
-    episode?.status === 'APPROVED' ||
-    episode?.status === 'SCRIPT_REVIEWED' ||
-    episode?.status === 'AUDIO_READY' ||
-    episode?.status === 'FAILED';
-  const canPublish =
-    episode?.status === 'AUDIO_READY' ||
-    episode?.status === 'PUBLISHED' ||
-    Boolean(audio?.status === 'ready');
+  const progress = podcastProgress(episode?.status);
 
   return (
     <main className="mx-auto min-h-screen max-w-lg px-4 pb-36 pt-5" dir="rtl">
-      <Link href="/podcasts" className="text-xs text-fog/55">
-        ← لیست اپیزودها
+      <Link
+        href="/podcasts"
+        className="inline-flex items-center gap-1 text-xs text-fog/55 hover:text-fog/80"
+      >
+        <span aria-hidden>→</span> لیست اپیزودها
       </Link>
 
-      {error ? <p className="mt-3 text-sm text-red-300">{error}</p> : null}
-      {!episode ? <p className="mt-8 text-sm text-fog/60">بارگذاری...</p> : null}
+      {error ? (
+        <p className="mt-3 rounded-lg border border-red-400/30 bg-red-400/10 px-3 py-2 text-sm text-red-200">
+          {error}
+        </p>
+      ) : null}
+
+      {!episode ? (
+        <div className="mt-8 animate-pulse space-y-3">
+          <div className="h-6 w-3/4 rounded bg-fog/10" />
+          <div className="h-16 w-full rounded-xl bg-fog/5" />
+        </div>
+      ) : null}
 
       {episode ? (
         <>
           <h1 className="mt-4 font-display text-xl font-bold">{episode.title}</h1>
-          <p className="mt-1 text-xs text-fog/55">
-            {episode.status} · هدف {episode.targetDurationMin} دقیقه
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <StatusBadge
+              label={labelEpisodeStatus(episode.status)}
+              tone={episodeStatusTone(episode.status)}
+            />
+            <span className="text-[11px] text-fog/50">
+              هدف {episode.targetDurationMin.toLocaleString('fa-IR')} دقیقه
+            </span>
             {episode.costSummary ? (
-              <>
-                {' '}
-                · هزینه ~${episode.costSummary.estimatedCost.toFixed(4)} ·{' '}
-                {episode.costSummary.tokens} توکن
-              </>
+              <span className="text-[11px] text-fog/40">
+                · هزینه ~${episode.costSummary.estimatedCost.toFixed(4)}
+              </span>
             ) : null}
-          </p>
+          </div>
+
+          <div className="mt-5 rounded-xl border border-fog/10 bg-black/15 px-3 py-4">
+            <p className="text-center text-[11px] text-fog/50">پیشرفت ساخت</p>
+            <PodcastStepper stepIndex={progress.stepIndex} done={progress.done} />
+          </div>
 
           <section className="mt-6">
-            <h2 className="text-xs font-semibold text-fog/50">اخبار انتخاب‌شده</h2>
+            <h2 className="text-xs font-semibold text-fog/50">اخبار این اپیزود</h2>
             <ul className="mt-2 space-y-2">
-              {(episode.items ?? []).map((item) => (
-                <li
-                  key={item.eventId}
-                  className="rounded-lg border border-fog/10 bg-black/10 px-3 py-2 text-xs"
-                >
-                  <div className="font-medium text-fog/85">{item.event?.title}</div>
-                  <div className="mt-1 text-fog/45">
-                    امتیاز {item.event?.importanceScore ?? '—'} · {item.event?.status}
-                  </div>
-                </li>
-              ))}
+              {(episode.items ?? []).length === 0 ? (
+                <li className="text-xs text-fog/45">خبری انتخاب نشده</li>
+              ) : (
+                (episode.items ?? []).map((item) => (
+                  <li
+                    key={item.eventId}
+                    className="rounded-lg border border-fog/10 bg-black/10 px-3 py-2 text-xs"
+                  >
+                    <div className="font-medium text-fog/85">{item.event?.title}</div>
+                    <div className="mt-1 text-fog/45">
+                      امتیاز{' '}
+                      {item.event?.importanceScore?.toLocaleString('fa-IR') ?? '—'} ·{' '}
+                      {labelEventStatus(item.event?.status)}
+                    </div>
+                  </li>
+                ))
+              )}
             </ul>
           </section>
 
@@ -246,16 +246,18 @@ export default function PodcastDetailPage() {
             <section className="mt-6">
               <div className="flex items-center justify-between">
                 <h2 className="text-xs font-semibold text-fog/50">
-                  اسکریپت v{script.version}
+                  متن اپیزود (نسخه {script.version.toLocaleString('fa-IR')})
                 </h2>
                 <span className="text-[11px] text-accent">
-                  {script.wordCount} واژه · ~{minutes} دقیقه
+                  {script.wordCount.toLocaleString('fa-IR')} واژه · ~
+                  {minutes?.toLocaleString('fa-IR')} دقیقه
                 </span>
               </div>
               {script.factCheckJson ? (
                 <p className="mt-1 text-[11px] text-fog/50">
-                  fact-check: {script.factCheckJson.ok ? 'OK' : 'نیاز به بازبینی'} (
-                  {script.factCheckJson.issues?.length ?? 0} مورد)
+                  راستی‌آزمایی:{' '}
+                  {script.factCheckJson.ok ? 'مورد مشکوکی نبود' : 'نیاز به بازبینی'} (
+                  {(script.factCheckJson.issues?.length ?? 0).toLocaleString('fa-IR')} مورد)
                 </p>
               ) : null}
               <pre className="mt-3 max-h-80 overflow-auto whitespace-pre-wrap rounded-xl border border-fog/10 bg-black/20 p-3 text-xs leading-6 text-fog/80">
@@ -268,8 +270,8 @@ export default function PodcastDetailPage() {
             <section className="mt-6">
               <h2 className="text-xs font-semibold text-fog/50">پخش صدا</h2>
               <p className="mt-1 text-[11px] text-fog/45">
-                {audio.provider} · ~{Math.round(audio.reportedDurationSec / 60)} دقیقه ·{' '}
-                {Math.round(audio.fileSizeBytes / 1024)} KB
+                ~{Math.round(audio.reportedDurationSec / 60).toLocaleString('fa-IR')} دقیقه ·{' '}
+                {Math.round(audio.fileSizeBytes / 1024).toLocaleString('fa-IR')} کیلوبایت
               </p>
               <audio
                 key={audio.id}
@@ -282,7 +284,7 @@ export default function PodcastDetailPage() {
               </audio>
               {episode.publication ? (
                 <p className="mt-2 text-[11px] text-accent">
-                  منتشر شده · {new Date(episode.publication.publishedAt).toLocaleString('fa-IR')}
+                  منتشر شده · {formatJalali(episode.publication.publishedAt)}
                 </p>
               ) : null}
               <a
@@ -291,55 +293,20 @@ export default function PodcastDetailPage() {
                 rel="noreferrer"
                 className="mt-2 inline-block text-[11px] text-fog/55 underline"
               >
-                RSS feed
+                خوراک RSS
               </a>
             </section>
           ) : null}
 
-          <div className="fixed inset-x-0 bottom-0 border-t border-fog/10 bg-[#0a2f24]/95 px-4 py-3 backdrop-blur">
-            <div className="mx-auto grid max-w-lg grid-cols-2 gap-2">
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void generate()}
-                className="rounded-lg border border-accent/40 py-2.5 text-xs font-semibold text-accent disabled:opacity-50"
-              >
-                تولید اسکریپت
-              </button>
-              <button
-                type="button"
-                disabled={busy || !script}
-                onClick={() => void approveScript()}
-                className="rounded-lg border border-fog/25 py-2.5 text-xs font-semibold disabled:opacity-50"
-              >
-                تأیید اسکریپت
-              </button>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void approveEpisode()}
-                className="rounded-lg border border-fog/25 py-2.5 text-xs font-semibold disabled:opacity-50"
-              >
-                تأیید اپیزود
-              </button>
-              <button
-                type="button"
-                disabled={busy || !canAudio}
-                onClick={() => void generateAudio()}
-                className="rounded-lg border border-accent/40 py-2.5 text-xs font-semibold text-accent disabled:opacity-50"
-              >
-                تولید صدا
-              </button>
-              <button
-                type="button"
-                disabled={busy || !canPublish}
-                onClick={() => void publish()}
-                className="col-span-2 rounded-lg bg-accent py-2.5 text-xs font-semibold text-ink disabled:opacity-50"
-              >
-                انتشار
-              </button>
-            </div>
-          </div>
+          <NextActionBar
+            hint={progress.hint}
+            label={progress.nextLabel}
+            busy={busy}
+            busyLabel={busyLabel}
+            onAction={
+              progress.nextAction ? () => void runAction(progress.nextAction!) : undefined
+            }
+          />
         </>
       ) : null}
     </main>

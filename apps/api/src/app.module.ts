@@ -16,6 +16,9 @@ import { EditorialModule } from './editorial/editorial.module.js';
 import { PodcastsModule } from './podcasts/podcasts.module.js';
 import { ReportsModule } from './reports/reports.module.js';
 import { NotificationsModule } from './notifications/notifications.module.js';
+import { ClusteringModule } from './clustering/clustering.module.js';
+import { RundownModule } from './rundown/rundown.module.js';
+import { CoverageModule } from './coverage/coverage.module.js';
 
 @Module({
   imports: [
@@ -36,6 +39,9 @@ import { NotificationsModule } from './notifications/notifications.module.js';
     PodcastsModule,
     ReportsModule,
     NotificationsModule,
+    ClusteringModule,
+    RundownModule,
+    CoverageModule,
   ],
 })
 export class AppModule {}
