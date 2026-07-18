@@ -6,10 +6,12 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        pitch: '#0B3D2E',
-        accent: '#C6A15B',
-        ink: '#12231C',
-        fog: '#E7F0EB',
+        pitch: 'rgb(var(--bg-0) / <alpha-value>)',
+        accent: 'rgb(var(--accent) / <alpha-value>)',
+        ink: 'rgb(var(--ink) / <alpha-value>)',
+        fog: 'rgb(var(--fog) / <alpha-value>)',
+        chrome: 'rgb(var(--chrome) / <alpha-value>)',
+        panel: 'rgb(var(--panel) / <alpha-value>)',
       },
       fontFamily: {
         display: ['"Vazirmatn"', '"IBM Plex Sans Arabic"', 'sans-serif'],

@@ -6,3 +6,4 @@ export * from './football-relevance.js';
 export * from './event-clustering-policy.js';
 export * from './daily-rundown-policy.js';
 export * from './coverage-intelligence.js';
+export * from './settings-control.js';

@@ -47,13 +47,15 @@ export function PageHeader({
   action?: React.ReactNode;
 }) {
   return (
-    <header className="mb-5 flex items-end justify-between gap-3">
-      <div>
+    <header className="mb-3 flex items-end justify-between gap-3">
+      <div className="min-w-0">
         {eyebrow ? (
-          <p className="text-[11px] font-medium tracking-wide text-accent">{eyebrow}</p>
+          <p className="text-[10px] font-medium tracking-wide text-accent/90">{eyebrow}</p>
         ) : null}
-        <h1 className="font-display text-2xl font-bold">{title}</h1>
-        {subtitle ? <p className="mt-1 text-xs text-fog/60">{subtitle}</p> : null}
+        <h1 className="font-display text-xl font-bold leading-tight sm:text-2xl">{title}</h1>
+        {subtitle ? (
+          <p className="mt-0.5 text-[11px] leading-5 text-fog/55">{subtitle}</p>
+        ) : null}
       </div>
       {action ? <div className="shrink-0">{action}</div> : null}
     </header>

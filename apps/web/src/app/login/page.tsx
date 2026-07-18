@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { apiFetch, getToken, setTokens } from '../../lib/api';
+import { apiFetch, getToken, setPermissions, setTokens } from '../../lib/api';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -23,11 +23,15 @@ export default function LoginPage() {
     try {
       const res = await apiFetch<{
         tokens: { accessToken: string; refreshToken: string };
+        user?: { permissions?: string[] };
       }>('/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email, password }),
       });
       setTokens(res.data.tokens.accessToken, res.data.tokens.refreshToken);
+      if (res.data.user?.permissions) {
+        setPermissions(res.data.user.permissions);
+      }
       router.push('/work');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'ورود ناموفق');

@@ -25,6 +25,34 @@ export function setTokens(accessToken: string, refreshToken?: string): void {
 export function clearTokens(): void {
   localStorage.removeItem('fn_access_token');
   localStorage.removeItem('fn_refresh_token');
+  localStorage.removeItem('fn_permissions');
+}
+
+export function setPermissions(permissions: string[]): void {
+  localStorage.setItem('fn_permissions', JSON.stringify(permissions));
+}
+
+export function getPermissions(): string[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem('fn_permissions');
+    if (!raw) {
+      const token = getToken();
+      if (!token) return [];
+      const payload = JSON.parse(
+        atob(token.split('.')[1]?.replace(/-/g, '+').replace(/_/g, '/') ?? ''),
+      ) as { permissions?: string[] };
+      return Array.isArray(payload.permissions) ? payload.permissions : [];
+    }
+    const parsed = JSON.parse(raw) as unknown;
+    return Array.isArray(parsed) ? (parsed as string[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function hasPermission(code: string): boolean {
+  return getPermissions().includes(code);
 }
 
 type TokenPair = { accessToken: string; refreshToken?: string };
@@ -54,11 +82,17 @@ function extractTokens(data: unknown): TokenPair | null {
 let refreshPromise: Promise<boolean> | null = null;
 
 async function tryRefresh(): Promise<boolean> {
-  if (!getRefreshToken()) return false;
+  if (!getRefreshToken()) {
+    clearTokens();
+    return false;
+  }
   if (!refreshPromise) {
     refreshPromise = (async () => {
       const refreshToken = getRefreshToken();
-      if (!refreshToken) return false;
+      if (!refreshToken) {
+        clearTokens();
+        return false;
+      }
       try {
         const res = await fetch(`${API_BASE}/auth/refresh`, {
           method: 'POST',
@@ -113,10 +147,15 @@ export async function apiFetch<T>(
   if (res.status === 401 && !retried) {
     const ok = await tryRefresh();
     if (ok) return apiFetch<T>(path, init, true);
+    clearTokens();
   }
 
   if (!res.ok || json.success === false) {
-    throw new Error(json.error?.message ?? `Request failed (${res.status})`);
+    const message = json.error?.message ?? `Request failed (${res.status})`;
+    if (res.status === 401) {
+      throw new Error(message.includes('Unauthorized') ? message : `Unauthorized (${message})`);
+    }
+    throw new Error(message);
   }
   return json;
 }

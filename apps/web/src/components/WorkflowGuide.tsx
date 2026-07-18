@@ -35,7 +35,7 @@ const STEPS: Array<{
   },
 ];
 
-/** Compact 3-step editorial path — wave → rundown → publish. */
+/** Slim 3-step editorial path — inbox → Today → podcast. */
 export function WorkflowGuide({
   counts,
   activeOverride,
@@ -51,56 +51,62 @@ export function WorkflowGuide({
   return (
     <nav
       aria-label="مسیر کار سردبیر"
-      className="mb-4 rounded-2xl border border-fog/10 bg-black/20 px-2.5 py-2.5"
+      className="mb-3 flex items-center gap-0.5 rounded-xl border border-fog/10 bg-black/20 p-1"
     >
-      <ol className="flex items-stretch gap-1">
-        {STEPS.map((step, i) => {
-          const isActive = step.id === active;
-          const count =
-            step.id === 'review'
-              ? counts?.review
-              : step.id === 'podcast'
-                ? counts?.ready
-                : counts?.episodes;
-          return (
-            <li key={step.id} className="flex min-w-0 flex-1 items-center gap-1">
-              {i > 0 ? (
-                <span className="shrink-0 text-[10px] text-fog/25" aria-hidden>
-                  ←
-                </span>
-              ) : null}
-              <Link
-                href={step.href}
-                className={`flex min-w-0 flex-1 flex-col items-center rounded-xl px-1 py-2 text-center transition ${
-                  isActive
-                    ? 'bg-accent/15 ring-1 ring-accent/35'
-                    : 'hover:bg-fog/5'
+      {STEPS.map((step, i) => {
+        const isActive = step.id === active;
+        const count =
+          step.id === 'review'
+            ? counts?.review
+            : step.id === 'podcast'
+              ? counts?.ready
+              : counts?.episodes;
+        return (
+          <div key={step.id} className="flex min-w-0 flex-1 items-center">
+            {i > 0 ? (
+              <span
+                className="mx-0.5 shrink-0 text-[9px] text-fog/20"
+                aria-hidden
+              >
+                ‹
+              </span>
+            ) : null}
+            <Link
+              href={step.href}
+              aria-current={isActive ? 'step' : undefined}
+              className={`flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg px-1.5 py-1.5 transition ${
+                isActive
+                  ? 'bg-accent/18 text-accent ring-1 ring-accent/35'
+                  : 'text-fog/50 hover:bg-fog/5 hover:text-fog/75'
+              }`}
+            >
+              <span
+                className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
+                  isActive ? 'bg-accent text-ink' : 'bg-fog/10 text-fog/45'
                 }`}
               >
+                {step.n}
+              </span>
+              <span
+                className={`truncate text-[11px] ${
+                  isActive ? 'font-semibold' : 'font-medium'
+                }`}
+              >
+                {step.label}
+              </span>
+              {count != null && count > 0 ? (
                 <span
-                  className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold ${
-                    isActive ? 'bg-accent text-ink' : 'border border-fog/20 text-fog/45'
+                  className={`shrink-0 tabular-nums text-[9px] ${
+                    isActive ? 'text-accent/80' : 'text-fog/35'
                   }`}
                 >
-                  {step.n}
+                  {count.toLocaleString('fa-IR')}
                 </span>
-                <span
-                  className={`mt-1 truncate text-[10px] leading-tight ${
-                    isActive ? 'font-semibold text-accent' : 'text-fog/50'
-                  }`}
-                >
-                  {step.label}
-                </span>
-                {count != null && count > 0 ? (
-                  <span className="mt-0.5 text-[9px] tabular-nums text-fog/40">
-                    {count.toLocaleString('fa-IR')}
-                  </span>
-                ) : null}
-              </Link>
-            </li>
-          );
-        })}
-      </ol>
+              ) : null}
+            </Link>
+          </div>
+        );
+      })}
     </nav>
   );
 }

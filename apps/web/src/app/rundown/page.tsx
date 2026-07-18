@@ -195,9 +195,8 @@ export default function RundownPage() {
   return (
     <main className="mx-auto min-h-screen max-w-lg px-4 pb-28 pt-6" dir="rtl">
       <PageHeader
-        eyebrow="سبد پادکست روز"
         title="Today"
-        subtitle="جدا از تأیید خبر — تا ساعت ۱۶ جمع‌آوری، بالانس، بعد قفل"
+        subtitle="تا ۱۶:۰۰ جمع کن · بالانس کن · قفل"
         action={
           <Link
             href="/inbox"
@@ -213,7 +212,7 @@ export default function RundownPage() {
         counts={{ ready: activeItems.length }}
       />
 
-      <CoveragePanel compact />
+      <CoveragePanel />
 
       {loading ? <SkeletonList rows={5} /> : null}
 

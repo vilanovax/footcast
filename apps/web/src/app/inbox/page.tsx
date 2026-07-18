@@ -310,17 +310,17 @@ export default function InboxPage() {
       dir="rtl"
     >
       <PageHeader
-        eyebrow="گام ۱ — inbox"
         title="inbox"
-        subtitle={`${total.toLocaleString('fa-IR')} خبر برای بررسی`}
+        subtitle={`${total.toLocaleString('fa-IR')} خبر · تأیید → Today`}
         action={
           <button
             type="button"
+            id="inbox-crawl-cta"
             disabled={crawling}
             onClick={() => void crawlNow()}
-            className="rounded-xl bg-accent px-3 py-2 text-[11px] font-semibold text-ink disabled:opacity-50"
+            className="rounded-xl bg-accent px-3 py-2 text-[11px] font-semibold text-ink shadow-sm shadow-accent/20 transition hover:brightness-105 disabled:opacity-50"
           >
-            {crawling ? 'در حال خزش…' : 'جستجوی خبر الان'}
+            {crawling ? 'در حال خزش…' : 'جستجوی خبر'}
           </button>
         }
       />
@@ -328,41 +328,38 @@ export default function InboxPage() {
       <WorkflowGuide activeOverride="review" counts={{ review: total }} />
 
       {crawlMsg ? (
-        <p className="mb-3 rounded-xl border border-accent/30 bg-accent/10 px-3 py-2 text-[11px] leading-5 text-accent">
+        <p className="mb-3 fn-fade-in rounded-xl border border-accent/30 bg-accent/10 px-3 py-2 text-[11px] leading-5 text-accent">
           {crawlMsg}
         </p>
       ) : null}
 
-      <p className="mb-3 text-[11px] leading-5 text-fog/45">
-        همهٔ خبرهای باز اینجاست. «جستجوی خبر الان» منابع را می‌خزد. بعد از تأیید →{' '}
-        <Link href="/rundown" className="text-accent underline">
-          Today
-        </Link>
-        . دلتا:{' '}
-        <Link href="/waves" className="underline">
-          محتوا
-        </Link>
-      </p>
-
       <CoveragePanel
         compact
+        onCrawlHint={() => {
+          document.getElementById('inbox-crawl-cta')?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center',
+          });
+          document.getElementById('inbox-crawl-cta')?.focus();
+        }}
         onFilter={(dimension, key, eventIds) => {
           setStatus('');
           setCoverageFilterIds(eventIds);
-          setCoverageFilterLabel(`${dimension}:${key}`);
+          setCoverageFilterLabel(`${key}`);
           setSelected(new Set());
         }}
       />
 
       {coverageFilterIds ? (
-        <div className="mb-3 flex items-center justify-between gap-2 rounded-xl border border-accent/25 bg-accent/10 px-3 py-2 text-[11px] text-accent">
+        <div className="mb-3 flex items-center justify-between gap-2 rounded-xl border border-accent/30 bg-accent/12 px-3 py-2 text-[11px] text-accent fn-fade-in">
           <span>
-            فیلتر پوشش {coverageFilterLabel} ·{' '}
-            {coverageFilterIds.length.toLocaleString('fa-IR')} خبر
+            فیلتر پوشش: {coverageFilterLabel} ·{' '}
+            {visibleItems.length.toLocaleString('fa-IR')} از{' '}
+            {coverageFilterIds.length.toLocaleString('fa-IR')}
           </span>
           <button
             type="button"
-            className="underline"
+            className="shrink-0 rounded-lg bg-accent/20 px-2 py-1 font-medium"
             onClick={() => {
               setCoverageFilterIds(null);
               setCoverageFilterLabel(null);

@@ -115,7 +115,13 @@ Auth: `Authorization: Bearer <access_token>`
 | POST | `/podcasts/:id/approve-script` | تأیید اسکریپت |
 | POST | `/podcasts/:id/approve` | تأیید اپیزود برای TTS |
 | GET | `/settings` | AppSetting |
+| GET | `/settings/workspace` | تنظیمات محصول/تم/AI خلاصه |
+| GET | `/settings/control` | مرکز کنترل (Providers، Pipeline، Audit، …) |
+| PATCH | `/settings/control/:section` | به‌روزرسانی یک بخش کنترل |
+| POST | `/settings/control/providers/:id/key` | تنظیم/پاک کردن کلید Provider (رمزنگاری) |
+| POST | `/settings/control/providers/:id/test` | تست اتصال Provider |
 | PATCH | `/settings/:key` | به‌روزرسانی تنظیم |
+
 | GET | `/dashboard` | آمار پایه فاز صفر |
 
 ## نقشه کامل نسخه اول (طراحی)

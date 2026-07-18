@@ -26,11 +26,52 @@ const PRIMARY_NAV = [
 ];
 
 const MORE_LINKS = [
+  { href: '/settings', label: 'تنظیمات', hint: 'تم، AI، ممیزی' },
   { href: '/waves', label: 'محتوا', hint: 'دلتای موج' },
   { href: '/sources', label: 'منابع خبر', hint: 'خزش و RSS' },
   { href: '/admin/clustering-evaluation', label: 'ارزیابی کلاستر', hint: 'ابزار کیفیت' },
   { href: '/dashboard', label: 'گزارش عملیات', hint: 'هزینه و صف' },
 ];
+
+function IconSettings({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" />
+      <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.86l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.86-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.86.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.86 1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.86l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.86.34H9a1.7 1.7 0 0 0 1-1.55V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.86-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.86V9c0 .69.4 1.3 1 1.55H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.55 1Z" />
+    </svg>
+  );
+}
+
+function IconBell({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M6 8a6 6 0 1 1 12 0c0 7 3 7 3 9H3c0-2 3-2 3-9Z" />
+      <path d="M10 21a2 2 0 0 0 4 0" />
+    </svg>
+  );
+}
 
 export function AppChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -73,18 +114,26 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
       const message = err instanceof Error ? err.message : '';
       if (/unauthorized|jwt|token/i.test(message)) {
         clearTokens();
+        setItems([]);
+        setUnread(0);
+        if (!hideChrome && pathname !== '/login') {
+          router.replace('/login');
+        }
       }
     }
-  }, [hideChrome]);
+  }, [hideChrome, pathname, router]);
 
   useEffect(() => {
     void registerServiceWorker();
   }, []);
 
   useEffect(() => {
-    void refresh();
     if (hideChrome) return;
-    const id = window.setInterval(() => void refresh(), 30000);
+    void refresh();
+    const id = window.setInterval(() => {
+      if (!getToken()) return;
+      void refresh();
+    }, 30000);
     return () => window.clearInterval(id);
   }, [refresh, hideChrome]);
 
@@ -145,7 +194,7 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-fog/10 bg-[#0a2f24]/95 backdrop-blur">
+      <header className="fn-chrome sticky top-0 z-40 border-b backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3">
           <div>
             <Link href="/work" className="font-display text-sm font-bold text-accent">
@@ -154,6 +203,18 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
             <p className="text-[10px] text-fog/45">inbox → Today → پادکست · قفل ۱۶:۰۰</p>
           </div>
           <div className="flex items-center gap-1.5">
+            <Link
+              href="/settings"
+              className={`inline-flex h-9 w-9 items-center justify-center rounded-full transition ${
+                pathname.startsWith('/settings')
+                  ? 'bg-accent/20 text-accent'
+                  : 'text-fog/60 hover:bg-fog/10 hover:text-fog'
+              }`}
+              aria-label="تنظیمات"
+              title="مرکز کنترل"
+            >
+              <IconSettings />
+            </Link>
             <div className="relative" ref={panelRef}>
               <button
                 type="button"
@@ -161,19 +222,24 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
                   setOpen((v) => !v);
                   setMoreOpen(false);
                 }}
-                className="relative rounded-lg border border-fog/20 px-2.5 py-1.5 text-xs text-fog/80"
+                className={`relative inline-flex h-9 w-9 items-center justify-center rounded-full transition ${
+                  open
+                    ? 'bg-accent/20 text-accent'
+                    : 'text-fog/60 hover:bg-fog/10 hover:text-fog'
+                }`}
                 aria-label="اعلان‌ها"
+                title="اعلان‌ها"
                 aria-expanded={open}
               >
-                اعلان
+                <IconBell />
                 {unread > 0 ? (
-                  <span className="absolute -right-1 -top-1 min-w-4 rounded-full bg-accent px-1 text-[10px] font-bold text-ink">
+                  <span className="absolute left-0.5 top-0.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-accent px-0.5 text-[8px] font-bold leading-none text-ink ring-2 ring-[rgb(var(--chrome))]">
                     {unread > 9 ? '۹+' : unread.toLocaleString('fa-IR')}
                   </span>
                 ) : null}
               </button>
               {open ? (
-                <div className="absolute left-0 top-full z-50 mt-2 w-80 rounded-xl border border-fog/15 bg-[#0d3428] p-2">
+                <div className="fn-panel absolute left-0 top-full z-50 mt-2 w-80 rounded-xl border p-2 shadow-lg">
                   <div className="mb-2 flex items-center justify-between px-1">
                     <span className="text-[11px] text-fog/50">اعلان‌ها</span>
                     <button
@@ -219,7 +285,7 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
             <button
               type="button"
               onClick={() => void onLogout()}
-              className="rounded-lg px-2.5 py-1.5 text-xs text-fog/55 hover:bg-white/5 hover:text-fog/80"
+              className="h-9 rounded-full px-3 text-[12px] text-fog/45 transition hover:bg-fog/10 hover:text-fog/80"
             >
               خروج
             </button>
@@ -231,7 +297,7 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
 
       {showBottomNav ? (
         <nav
-          className="fixed inset-x-0 bottom-0 z-40 border-t border-fog/10 bg-[#0a2f24]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur"
+          className="fn-chrome fixed inset-x-0 bottom-0 z-40 border-t pb-[env(safe-area-inset-bottom)] backdrop-blur"
           aria-label="منوی اصلی"
         >
           <div className="mx-auto grid max-w-lg grid-cols-5">
@@ -269,7 +335,7 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
                 <span className="mt-0.5 text-[9px] leading-none opacity-65">ابزار</span>
               </button>
               {moreOpen ? (
-                <div className="absolute bottom-[calc(100%+0.35rem)] left-2 right-2 z-50 rounded-2xl border border-fog/15 bg-[#0d3428] p-2 shadow-xl sm:left-auto sm:right-0 sm:w-56">
+                <div className="fn-panel absolute bottom-[calc(100%+0.35rem)] left-2 right-2 z-50 rounded-2xl border p-2 shadow-xl sm:left-auto sm:right-0 sm:w-56">
                   <p className="px-2 pb-1.5 text-[10px] text-fog/40">ابزارهای فنی</p>
                   <ul className="space-y-0.5">
                     {MORE_LINKS.map((item) => (

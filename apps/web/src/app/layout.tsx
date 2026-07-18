@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { AppChrome } from '../components/AppChrome';
+import { ThemeProvider } from '../components/ThemeProvider';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -27,10 +28,15 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
+const themeBootScript = `
+(function(){try{var t=localStorage.getItem('fn_theme');if(t==='dark'||t==='light'||t==='pitch'){document.documentElement.setAttribute('data-theme',t);document.documentElement.style.colorScheme=t==='light'?'light':'dark';}}catch(e){}})();
+`;
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fa" dir="rtl">
+    <html lang="fa" dir="rtl" data-theme="pitch" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
@@ -39,7 +45,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body>
-        <AppChrome>{children}</AppChrome>
+        <ThemeProvider>
+          <AppChrome>{children}</AppChrome>
+        </ThemeProvider>
       </body>
     </html>
   );

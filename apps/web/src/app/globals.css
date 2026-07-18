@@ -2,26 +2,255 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Default = pitch (brand green, dark UI). Do NOT share :root with theme selectors —
+   :root always matches <html> and would override light/dark tokens. */
 :root {
-  --bg-0: #0b3d2e;
-  --bg-1: #124a38;
-  --ink: #f3f7f4;
-  --accent: #c6a15b;
+  --bg-0: 11 61 46;
+  --bg-1: 18 74 56;
+  --bg-2: 10 47 36;
+  --chrome: 10 47 36;
+  --panel: 13 52 40;
+  --ink: 18 35 28;
+  --fog: 231 240 235;
+  --accent: 198 161 91;
+  --surface: 0 0 0;
+  --surface-a: 0.22;
+  --border: 231 240 235;
+  --border-a: 0.12;
+  color-scheme: dark;
 }
 
-html {
+html[data-theme='pitch'] {
+  --bg-0: 11 61 46;
+  --bg-1: 18 74 56;
+  --bg-2: 10 47 36;
+  --chrome: 10 47 36;
+  --panel: 13 52 40;
+  --ink: 18 35 28;
+  --fog: 231 240 235;
+  --accent: 198 161 91;
+  --surface: 0 0 0;
+  --surface-a: 0.22;
+  --border: 231 240 235;
+  --border-a: 0.12;
   color-scheme: dark;
+}
+
+html[data-theme='dark'] {
+  --bg-0: 12 15 14;
+  --bg-1: 21 26 24;
+  --bg-2: 10 12 11;
+  --chrome: 10 12 11;
+  --panel: 18 24 22;
+  --ink: 10 16 14;
+  --fog: 232 238 234;
+  --accent: 212 176 106;
+  --surface: 255 255 255;
+  --surface-a: 0.05;
+  --border: 232 238 234;
+  --border-a: 0.12;
+  color-scheme: dark;
+}
+
+/* Light: dark text on pale surfaces — high contrast */
+html[data-theme='light'] {
+  --bg-0: 247 249 248;
+  --bg-1: 241 245 243;
+  --bg-2: 234 240 237;
+  --chrome: 255 255 255;
+  --panel: 255 255 255;
+  --ink: 18 28 24;
+  --fog: 18 28 24;
+  --accent: 138 102 40;
+  --surface: 255 255 255;
+  --surface-a: 1;
+  --border: 18 28 24;
+  --border-a: 0.12;
+  color-scheme: light;
 }
 
 body {
   margin: 0;
   min-height: 100vh;
   font-family: "Vazirmatn", "IBM Plex Sans Arabic", sans-serif;
-  color: var(--ink);
+  color: rgb(var(--fog));
   background:
-    radial-gradient(1200px 600px at 10% -10%, rgba(198, 161, 91, 0.22), transparent 55%),
-    radial-gradient(900px 500px at 100% 0%, rgba(231, 240, 235, 0.12), transparent 50%),
-    linear-gradient(160deg, var(--bg-0), var(--bg-1) 45%, #0a2f24);
+    radial-gradient(
+      1200px 600px at 10% -10%,
+      rgb(var(--accent) / 0.18),
+      transparent 55%
+    ),
+    radial-gradient(
+      900px 500px at 100% 0%,
+      rgb(var(--fog) / 0.06),
+      transparent 50%
+    ),
+    linear-gradient(
+      160deg,
+      rgb(var(--bg-0)),
+      rgb(var(--bg-1)) 45%,
+      rgb(var(--bg-2))
+    );
+}
+
+html[data-theme='light'] body {
+  background:
+    radial-gradient(
+      900px 480px at 12% -8%,
+      rgb(var(--accent) / 0.08),
+      transparent 50%
+    ),
+    linear-gradient(180deg, rgb(var(--bg-0)), rgb(var(--bg-1)));
+  color: rgb(18 28 24);
+}
+
+.fn-chrome {
+  background-color: rgb(var(--chrome) / 0.94);
+  border-color: rgb(var(--border) / var(--border-a));
+  backdrop-filter: blur(10px);
+}
+
+html[data-theme='light'] .fn-chrome {
+  background-color: rgb(255 255 255 / 0.92);
+  border-color: rgb(18 28 24 / 0.1);
+  box-shadow: 0 1px 0 rgb(18 28 24 / 0.04);
+}
+
+.fn-panel {
+  background-color: rgb(var(--panel));
+  border-color: rgb(var(--border) / var(--border-a));
+}
+
+html[data-theme='light'] .fn-panel {
+  background-color: #fff;
+  border-color: rgb(18 28 24 / 0.1);
+  box-shadow: 0 8px 24px rgb(18 28 24 / 0.06);
+}
+
+/* Light theme: black translucent fills were designed for dark UIs */
+html[data-theme='light'] .bg-black\/10,
+html[data-theme='light'] .bg-black\/15,
+html[data-theme='light'] .bg-black\/20,
+html[data-theme='light'] .bg-black\/25,
+html[data-theme='light'] .bg-black\/30,
+html[data-theme='light'] .bg-black\/40 {
+  background-color: rgb(18 28 24 / 0.05) !important;
+}
+
+html[data-theme='light'] .hover\:bg-black\/20:hover,
+html[data-theme='light'] .hover\:bg-black\/25:hover,
+html[data-theme='light'] .hover\:bg-black\/30:hover {
+  background-color: rgb(18 28 24 / 0.07) !important;
+}
+
+html[data-theme='light'] .hover\:bg-white\/5:hover,
+html[data-theme='light'] .hover\:bg-fog\/5:hover,
+html[data-theme='light'] .hover\:bg-fog\/10:hover {
+  background-color: rgb(18 28 24 / 0.06) !important;
+}
+
+/* Status colors that are pastel-on-dark → solid-on-light */
+html[data-theme='light'] .text-emerald-100,
+html[data-theme='light'] .text-emerald-200 {
+  color: rgb(4 120 87) !important;
+}
+
+html[data-theme='light'] .text-amber-50,
+html[data-theme='light'] .text-amber-100,
+html[data-theme='light'] .text-amber-200 {
+  color: rgb(146 64 14) !important;
+}
+
+html[data-theme='light'] .text-red-100,
+html[data-theme='light'] .text-red-200 {
+  color: rgb(185 28 28) !important;
+}
+
+html[data-theme='light'] .bg-emerald-400\/10,
+html[data-theme='light'] .bg-emerald-400\/15 {
+  background-color: rgb(16 185 129 / 0.12) !important;
+}
+
+html[data-theme='light'] .bg-amber-400\/10,
+html[data-theme='light'] .bg-amber-400\/15 {
+  background-color: rgb(245 158 11 / 0.14) !important;
+}
+
+html[data-theme='light'] .bg-accent\/10,
+html[data-theme='light'] .bg-accent\/15,
+html[data-theme='light'] .bg-accent\/18,
+html[data-theme='light'] .bg-accent\/20 {
+  background-color: rgb(var(--accent) / 0.12) !important;
+}
+
+/* Settings soft surfaces */
+html[data-theme='light'] .bg-\[rgb\(var\(--surface\)\/var\(--surface-a\)\)\] {
+  background-color: #fff !important;
+  box-shadow: 0 1px 2px rgb(18 28 24 / 0.04), 0 0 0 1px rgb(18 28 24 / 0.08);
+}
+
+html[data-theme='light'] .bg-\[rgb\(var\(--fog\)\/0\.04\)\],
+html[data-theme='light'] .bg-\[rgb\(var\(--fog\)\/0\.06\)\] {
+  background-color: rgb(18 28 24 / 0.04) !important;
+}
+
+html[data-theme='light'] .divide-fog\/8 > :not([hidden]) ~ :not([hidden]) {
+  border-color: rgb(18 28 24 / 0.08);
+}
+
+html[data-theme='light'] .ring-fog\/8,
+html[data-theme='light'] .ring-fog\/10,
+html[data-theme='light'] .ring-fog\/15 {
+  --tw-ring-color: rgb(18 28 24 / 0.12);
+}
+
+html[data-theme='light'] .border-fog\/8,
+html[data-theme='light'] .border-fog\/10,
+html[data-theme='light'] .border-fog\/12,
+html[data-theme='light'] .border-fog\/15 {
+  border-color: rgb(18 28 24 / 0.12) !important;
+}
+
+/* Low-alpha fog text was tuned for dark UIs — bump contrast on light */
+html[data-theme='light'] .text-fog\/20,
+html[data-theme='light'] .text-fog\/25,
+html[data-theme='light'] .text-fog\/30 {
+  color: rgb(18 28 24 / 0.48) !important;
+}
+
+html[data-theme='light'] .text-fog\/35,
+html[data-theme='light'] .text-fog\/40 {
+  color: rgb(18 28 24 / 0.58) !important;
+}
+
+html[data-theme='light'] .text-fog\/45,
+html[data-theme='light'] .text-fog\/50 {
+  color: rgb(18 28 24 / 0.68) !important;
+}
+
+html[data-theme='light'] .text-fog\/55,
+html[data-theme='light'] .text-fog\/60 {
+  color: rgb(18 28 24 / 0.78) !important;
+}
+
+html[data-theme='light'] .placeholder\:text-fog\/30::placeholder {
+  color: rgb(18 28 24 / 0.45) !important;
+}
+
+html[data-theme='light'] .text-fog\/70,
+html[data-theme='light'] .text-fog\/80,
+html[data-theme='light'] .text-fog\/85 {
+  color: rgb(18 28 24 / 0.85) !important;
+}
+
+html[data-theme='light'] .text-fog\/90,
+html[data-theme='light'] .text-fog {
+  color: rgb(18 28 24) !important;
+}
+
+/* Bottom-nav hints stack opacity on already-muted text */
+html[data-theme='light'] .opacity-65 {
+  opacity: 0.8;
 }
 
 @keyframes fn-fade-in {
