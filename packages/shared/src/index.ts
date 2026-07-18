@@ -2,6 +2,7 @@ export * from './enums.js';
 export * from './api.js';
 export * from './scoring.js';
 export * from './scoring-policy.js';
+export * from './normalize-scope.js';
 export * from './football-relevance.js';
 export * from './event-clustering-policy.js';
 export * from './daily-rundown-policy.js';

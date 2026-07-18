@@ -9,7 +9,11 @@ import { assertTransition } from '@footcast/article-pipeline';
 import type { Database } from '@footcast/database';
 import type { Logger } from '@footcast/logger';
 import type { ClusterEventJobData, ExtractArticleJobData, Queue } from '@footcast/queue';
-import { ArticleStatus, assessFootballRelevance } from '@footcast/shared';
+import {
+  ArticleStatus,
+  assessFootballRelevance,
+  normalizeScope,
+} from '@footcast/shared';
 
 export async function processExtractArticleJob(
   db: Database,
@@ -164,7 +168,7 @@ export async function processExtractArticleJob(
         relevanceGate: gate,
       },
       isRelevant,
-      scope: card.scope,
+      scope: normalizeScope(card.scope),
       category: isRelevant ? card.category : card.category,
       headlineFa: card.headlineFa,
       summaryFa: card.summaryFa,

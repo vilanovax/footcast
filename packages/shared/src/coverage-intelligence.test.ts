@@ -171,6 +171,61 @@ describe('coverage-intelligence', () => {
     assert.ok(report.note.includes('چند دسته'));
   });
 
+  it('suggests best-available soft picks when nothing is eligible', () => {
+    const report = buildCoverageReport({
+      editorialDate: '2026-07-18',
+      selectedEventIds: [],
+      targets: [
+        {
+          dimension: CoverageDimensionKey.SCOPE,
+          key: 'IRAN',
+          minSelectedCount: 1,
+          maxSelectedCount: 5,
+          minDurationSeconds: null,
+          maxDurationSeconds: null,
+          priority: 10,
+          enforcement: 'SOFT',
+        },
+      ],
+      events: [
+        {
+          id: 'weak1',
+          scope: 'IRAN',
+          category: 'OTHER',
+          finalScore: 38,
+          credibilityScore: 55,
+          freshnessScore: 70,
+          status: 'NEEDS_REVIEW',
+          teamKeys: [],
+          competitionKeys: [],
+          trackedEventKeys: [],
+          title: 'امباپه و زیدان',
+        },
+        {
+          id: 'weak2',
+          scope: 'IRAN',
+          category: 'OTHER',
+          finalScore: 42,
+          credibilityScore: 50,
+          freshnessScore: 60,
+          status: 'NEEDS_REVIEW',
+          teamKeys: [],
+          competitionKeys: [],
+          trackedEventKeys: [],
+          title: 'خبر دوم',
+        },
+      ],
+    });
+    assert.equal(report.summary.eligibleEventCount, 0);
+    const soft = report.recommendations.find(
+      (r) => r.type === CoverageRecommendationType.BEST_AVAILABLE,
+    );
+    assert.ok(soft);
+    assert.ok(soft!.suggestedEventIds.includes('weak2'));
+    assert.ok(soft!.suggestedEventIds.includes('weak1'));
+    assert.equal(soft!.suggestedEventIds[0], 'weak2');
+  });
+
   it('suggests gap when eligible exists but nothing selected', () => {
     const report = buildCoverageReport({
       editorialDate: '2026-07-18',

@@ -4,6 +4,7 @@ import {
   NewsCategory,
   RundownSection,
 } from './enums.js';
+import { scopeBucketKey } from './normalize-scope.js';
 
 export const DAILY_RUNDOWN_POLICY = {
   version: '1.0.0',
@@ -285,7 +286,7 @@ export function coverageNeedForScope(
   scope: string | null | undefined,
   summary: ReturnType<typeof summarizeCoverage>,
 ): number {
-  const key = scope ?? 'OTHER';
+  const key = scopeBucketKey(scope);
   const bucket = summary.byScope.find((b) => b.key === key);
   const pct = bucket?.percentDuration ?? 0;
   const rule = DAILY_RUNDOWN_POLICY.coverageRules.find(

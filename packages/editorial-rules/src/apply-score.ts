@@ -24,6 +24,10 @@ export function buildEventScoreInput(args: {
   isAdvertisement?: boolean;
   isClickbait?: boolean;
   isNewDevelopment?: boolean;
+  /** From clustering metadata / near-duplicate flags */
+  isDuplicateHeavy?: boolean;
+  /** Total article links on the event (before unique-by-source) */
+  articleLinkCount?: number;
   sources: LinkedSourceInfo[];
 }): { input: EventScoreInput; result: EventScoreResult } {
   const uniqueById = new Map<string, LinkedSourceInfo>();
@@ -35,6 +39,10 @@ export function buildEventScoreInput(args: {
     args.lastSeenAt != null
       ? (Date.now() - new Date(args.lastSeenAt).getTime()) / 3_600_000
       : null;
+
+  const articleLinks = args.articleLinkCount ?? args.sources.length;
+  const reprintHeavy = unique.length === 1 && articleLinks >= 3;
+  const isDuplicateHeavy = Boolean(args.isDuplicateHeavy) || reprintHeavy;
 
   const input: EventScoreInput = {
     title: args.title,
@@ -51,7 +59,7 @@ export function buildEventScoreInput(args: {
     clubs: args.clubs,
     people: args.people,
     hasOpenConflict: args.hasOpenConflict,
-    isDuplicateHeavy: unique.length === 1 && args.sources.length > 3,
+    isDuplicateHeavy,
     hasDirectQuote: args.hasDirectQuote,
     isAdvertisement: args.isAdvertisement,
     isClickbait: args.isClickbait,

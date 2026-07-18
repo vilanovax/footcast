@@ -70,6 +70,7 @@ const STATUS_TONE: Record<string, string> = {
 const REC_TYPE_FA: Record<string, string> = {
   NO_AVAILABLE_NEWS: 'خبری نیست',
   COVERAGE_GAP: 'شکاف پوشش',
+  BEST_AVAILABLE: 'بهترین موجود',
   AVAILABLE_NOT_SELECTED: 'آمادهٔ Today',
   OVER_COVERED: 'تراکم پوشش',
   TEAM_REDUNDANCY: 'تکرار تیم',
@@ -162,6 +163,15 @@ export function CoveragePanel({
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Auto-expand when there are actionable suggestions (incl. soft best-available)
+  useEffect(() => {
+    if (!data) return;
+    const actionable = data.recommendations.some(
+      (r) => r.suggestedEventIds.length > 0,
+    );
+    if (actionable) setOpen(true);
+  }, [data]);
 
   const buckets = useMemo(() => {
     if (!data) return [];
@@ -282,6 +292,10 @@ export function CoveragePanel({
               <p className="mt-1.5 text-[10px] leading-4 text-fog/45">
                 استخراج {data.summary.discoveredEventCount.toLocaleString('fa-IR')} · واجد شرایط{' '}
                 {data.summary.eligibleEventCount.toLocaleString('fa-IR')}
+                {data.summary.eligibleEventCount === 0 &&
+                data.summary.discoveredEventCount > 0
+                  ? ' · آستانه Today: امتیاز ≥ ۷۰ و اعتبار ≥ ۶۰'
+                  : ''}
               </p>
             </div>
           ) : (
@@ -453,6 +467,42 @@ export function CoveragePanel({
                             </span>
                           </div>
                           <p className="mt-1.5 text-[11px] leading-5 text-fog/75">{r.message}</p>
+                          {r.type === 'BEST_AVAILABLE' &&
+                          r.suggestedEventIds.length > 1 ? (
+                            <ul className="mt-2 space-y-1.5">
+                              {r.suggestedEventIds.slice(0, 5).map((eid, idx) => (
+                                <li
+                                  key={eid}
+                                  className="flex flex-wrap items-center gap-1.5"
+                                >
+                                  <span className="text-[10px] text-fog/45">
+                                    #{(idx + 1).toLocaleString('fa-IR')}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    disabled={busyKey === `${recKey}:${eid}`}
+                                    className="rounded-lg bg-accent px-2 py-1 text-[10px] font-semibold text-ink disabled:opacity-50"
+                                    onClick={() =>
+                                      void addSuggested(eid, `${recKey}:${eid}`)
+                                    }
+                                  >
+                                    + Today
+                                  </button>
+                                  {onFilter ? (
+                                    <button
+                                      type="button"
+                                      className="rounded-lg border border-fog/20 px-2 py-1 text-[10px] text-fog/70"
+                                      onClick={() =>
+                                        onFilter(r.dimension, r.key, [eid])
+                                      }
+                                    >
+                                      در inbox
+                                    </button>
+                                  ) : null}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : null}
                           <div className="mt-2 flex flex-wrap gap-1.5">
                             {suggested && onFilter ? (
                               <button
@@ -462,7 +512,7 @@ export function CoveragePanel({
                                   onFilter(r.dimension, r.key, r.suggestedEventIds)
                                 }
                               >
-                                نمایش در inbox
+                                نمایش همه در inbox
                               </button>
                             ) : null}
                             {suggested &&

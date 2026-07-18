@@ -270,9 +270,23 @@ function InboxPageInner() {
   }, [flash]);
 
   const visibleItems = useMemo(() => {
-    if (!coverageFilterIds) return items;
-    const allow = new Set(coverageFilterIds);
-    return items.filter((i) => allow.has(i.id));
+    const allow = coverageFilterIds ? new Set(coverageFilterIds) : null;
+    const list = allow ? items.filter((i) => allow.has(i.id)) : [...items];
+    // Highest score first so editor sees pick candidates at the top
+    list.sort((a, b) => {
+      const sa =
+        a.effectiveFinalScore ??
+        a.latestScore?.finalScore ??
+        a.importanceScore ??
+        0;
+      const sb =
+        b.effectiveFinalScore ??
+        b.latestScore?.finalScore ??
+        b.importanceScore ??
+        0;
+      return sb - sa;
+    });
+    return list;
   }, [items, coverageFilterIds]);
 
   const allIds = useMemo(() => visibleItems.map((i) => i.id), [visibleItems]);
@@ -759,19 +773,36 @@ function InboxPageInner() {
                           tone={eventStatusTone(item.status)}
                         />
                         <StatusBadge label={labelCategory(item.category)} tone="accent" />
+                        {rec ? (
+                          <StatusBadge
+                            label={labelRecommendation(rec)}
+                            tone={
+                              rec === 'LEAD_STORY' ||
+                              rec === 'INCLUDE_IN_MAIN_PODCAST'
+                                ? 'ok'
+                                : rec === 'INCLUDE_AS_BRIEF'
+                                  ? 'accent'
+                                  : rec === 'REJECT_OR_ARCHIVE'
+                                    ? 'danger'
+                                    : 'warn'
+                            }
+                          />
+                        ) : null}
                         {inboxAutomationBadges({
                           recommendation: rec,
                           metadata: item.metadata,
                           inToday: todayIds.has(item.id),
-                        }).map((b) => (
-                          <StatusBadge key={b.key} label={b.label} tone={b.tone} />
-                        ))}
-                        {rec === 'REJECT_OR_ARCHIVE' ? (
-                          <StatusBadge
-                            label={labelRecommendation(rec)}
-                            tone="warn"
-                          />
-                        ) : null}
+                        })
+                          .filter(
+                            (b) =>
+                              // recommendation badge already shown above
+                              b.key !== 'lead' &&
+                              b.key !== 'important' &&
+                              b.key !== 'candidate',
+                          )
+                          .map((b) => (
+                            <StatusBadge key={b.key} label={b.label} tone={b.tone} />
+                          ))}
                       </div>
 
                       <div className="mt-2 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-fog/40">

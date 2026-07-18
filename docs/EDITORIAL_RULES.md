@@ -40,6 +40,16 @@
 
 در فرمول استفاده می‌شود: `highestTrusted×0.60 + avgOthers×0.40`؛ منبع رسمی باشگاه/فدراسیون کف ۹۰.
 
+Seed پیش‌فرض بر اساس `source_type` (migration `20260718000020`): رسمی ۹۲–۹۵، خبرگزاری ~۸۵، رسانه ورزشی محلی ~۷۲، aggregator ~۴۰.
+
+### Scope
+
+همهٔ مسیرها از `normalizeScope()` استفاده می‌کنند → canonical: `IRAN | EUROPE | BOTH | OTHER` (ورودی AI مثل `iran` هم پذیرفته می‌شود).
+
+### Duplicate heavy
+
+`isDuplicateHeavy` از metadata خوشه‌بندی (`nearDuplicate` / `exactDuplicate` / `duplicateOfEventId`) یا بازنشر چندلینک تک‌منبعی (`articleLinkCount ≥ 3`) می‌آید — نه از طول آرایهٔ unique.
+
 ### پیشنهاد پادکست (`recommendation`)
 
 | کد | معنی |

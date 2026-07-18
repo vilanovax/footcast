@@ -6,6 +6,7 @@ import {
   NewsCategory,
 } from './enums.js';
 import { DAILY_RUNDOWN_POLICY } from './daily-rundown-policy.js';
+import { scopeBucketKey } from './normalize-scope.js';
 
 export type CoverageEventRow = {
   id: string;
@@ -198,6 +199,10 @@ export function buildCoverageReport(input: {
   };
   targetDurationSeconds?: number;
 }): CoverageReport {
+  const events = input.events.map((e) => ({
+    ...e,
+    scope: e.scope ? scopeBucketKey(e.scope) : null,
+  }));
   const selectedIds = new Set(input.selectedEventIds);
   const durationById = new Map(
     Object.entries(input.selectedDurations ?? {}).map(([k, v]) => [k, v]),
@@ -209,14 +214,14 @@ export function buildCoverageReport(input: {
 
   const scopeKeys = [
     ...new Set([
-      ...keysFromEvents(input.events, (e) => (e.scope ? [e.scope] : [])),
+      ...keysFromEvents(events, (e) => (e.scope ? [e.scope] : [])),
       'IRAN',
       'EUROPE',
     ]),
   ];
-  const teamKeys = keysFromEvents(input.events, (e) => e.teamKeys);
-  const competitionKeys = keysFromEvents(input.events, (e) => e.competitionKeys);
-  const trackedKeys = keysFromEvents(input.events, (e) => e.trackedEventKeys);
+  const teamKeys = keysFromEvents(events, (e) => e.teamKeys);
+  const competitionKeys = keysFromEvents(events, (e) => e.competitionKeys);
+  const trackedKeys = keysFromEvents(events, (e) => e.trackedEventKeys);
   // Always include target keys even if empty
   for (const t of input.targets) {
     if (t.dimension === CoverageDimensionKey.TEAM) teamKeys.push(t.key);
@@ -226,7 +231,7 @@ export function buildCoverageReport(input: {
   const uniq = (arr: string[]) => [...new Set(arr)];
 
   const categoryKeys = uniq([
-    ...keysFromEvents(input.events, (e) => (e.category ? [e.category] : [])),
+    ...keysFromEvents(events, (e) => (e.category ? [e.category] : [])),
     NewsCategory.TRANSFER,
     NewsCategory.MATCH_RESULT,
     NewsCategory.INJURY,
@@ -239,7 +244,7 @@ export function buildCoverageReport(input: {
       CoverageDimensionKey.SCOPE,
       key,
       labels.scopes?.[key] ?? key,
-      input.events.filter((e) => e.scope === key),
+      events.filter((e) => e.scope === key),
       selectedIds,
       targetMap.get(`${CoverageDimensionKey.SCOPE}:${key}`),
       durationById,
@@ -251,7 +256,7 @@ export function buildCoverageReport(input: {
       CoverageDimensionKey.TEAM,
       key,
       labels.teams?.[key] ?? key,
-      input.events.filter((e) => e.teamKeys.includes(key)),
+      events.filter((e) => e.teamKeys.includes(key)),
       selectedIds,
       targetMap.get(`${CoverageDimensionKey.TEAM}:${key}`),
       durationById,
@@ -263,7 +268,7 @@ export function buildCoverageReport(input: {
       CoverageDimensionKey.COMPETITION,
       key,
       labels.competitions?.[key] ?? key,
-      input.events.filter((e) => e.competitionKeys.includes(key)),
+      events.filter((e) => e.competitionKeys.includes(key)),
       selectedIds,
       targetMap.get(`${CoverageDimensionKey.COMPETITION}:${key}`),
       durationById,
@@ -275,7 +280,7 @@ export function buildCoverageReport(input: {
       CoverageDimensionKey.TRACKED_EVENT,
       key,
       labels.trackedEvents?.[key] ?? key,
-      input.events.filter((e) => e.trackedEventKeys.includes(key)),
+      events.filter((e) => e.trackedEventKeys.includes(key)),
       selectedIds,
       targetMap.get(`${CoverageDimensionKey.TRACKED_EVENT}:${key}`),
       durationById,
@@ -287,14 +292,14 @@ export function buildCoverageReport(input: {
       CoverageDimensionKey.CATEGORY,
       key,
       labels.categories?.[key] ?? key,
-      input.events.filter((e) => e.category === key),
+      events.filter((e) => e.category === key),
       selectedIds,
       targetMap.get(`${CoverageDimensionKey.CATEGORY}:${key}`),
       durationById,
     ),
   );
 
-  const selectedEvents = input.events.filter((e) => selectedIds.has(e.id));
+  const selectedEvents = events.filter((e) => selectedIds.has(e.id));
   const estimatedDurationSeconds = selectedEvents.reduce(
     (s, e) => s + (durationById.get(e.id) ?? e.estimatedDurationSeconds ?? 60),
     0,
@@ -314,7 +319,7 @@ export function buildCoverageReport(input: {
 
   const recommendations = buildRecommendations({
     buckets: allBuckets,
-    events: input.events,
+    events,
     selectedIds,
     targets: input.targets,
   });
@@ -322,8 +327,8 @@ export function buildCoverageReport(input: {
   return {
     editorialDate: input.editorialDate,
     summary: {
-      discoveredEventCount: input.events.length,
-      eligibleEventCount: input.events.filter((e) => isEligibleEvent(e)).length,
+      discoveredEventCount: events.length,
+      eligibleEventCount: events.filter((e) => isEligibleEvent(e)).length,
       selectedEventCount: selectedIds.size,
       estimatedDurationSeconds,
       targetDurationSeconds:
@@ -492,6 +497,53 @@ function buildRecommendations(input: {
     }
   }
 
+  // Soft picks: nothing meets shortlist gates, but discovered news exists
+  const hasActionableGap = out.some(
+    (r) =>
+      r.type === CoverageRecommendationType.COVERAGE_GAP &&
+      r.suggestedEventIds.length > 0,
+  );
+  const eligibleTotal = input.events.filter((e) => isEligibleEvent(e)).length;
+  if (!hasActionableGap && eligibleTotal === 0) {
+    const minFinal = DAILY_RUNDOWN_POLICY.scoreGates.shortlistMin;
+    const minCred = DAILY_RUNDOWN_POLICY.scoreGates.shortlistCredibilityMin;
+    const soft = input.events
+      .filter((e) => !REJECTED.has(e.status) && !input.selectedIds.has(e.id))
+      .map((e) => ({
+        e,
+        rank:
+          (e.finalScore ?? 0) * 0.7 +
+          (e.credibilityScore ?? 0) * 0.3 +
+          (e.freshnessScore ?? 0) * 0.05,
+      }))
+      .sort((a, b) => b.rank - a.rank)
+      .slice(0, 5)
+      .map((x) => x.e);
+    if (soft.length > 0) {
+      const titles = soft
+        .map((e) => {
+          const score = Math.round(e.finalScore ?? 0);
+          const t = (e.title ?? e.id).slice(0, 42);
+          return `«${t}» (${score})`;
+        })
+        .join(' · ');
+      out.push({
+        type: CoverageRecommendationType.BEST_AVAILABLE,
+        dimension: 'GLOBAL',
+        key: 'best_available',
+        message: `هیچ خبری به آستانهٔ Today نرسیده (امتیاز ≥ ${minFinal} و اعتبار ≥ ${minCred}). بهترین‌های موجود برای بررسی دستی: ${titles}`,
+        eligibleCount: 0,
+        selectedCount: input.selectedIds.size,
+        suggestedEventIds: soft.map((e) => e.id),
+        reasons: [
+          'eligibleEventCount = 0',
+          'soft_rank_by_score_cred_freshness',
+          `shortlistGates=${minFinal}/${minCred}`,
+        ],
+      });
+    }
+  }
+
   // Dedupe by type+dimension+key, keep higher priority gaps first
   const seen = new Set<string>();
   return out
@@ -501,7 +553,9 @@ function buildRecommendations(input: {
           ? 0
           : t === CoverageRecommendationType.REPLACEMENT_SUGGESTION
             ? 1
-            : 2;
+            : t === CoverageRecommendationType.BEST_AVAILABLE
+              ? 2
+              : 3;
       return rank(a.type) - rank(b.type);
     })
     .filter((r) => {

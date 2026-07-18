@@ -6,7 +6,11 @@ import {
 } from '@footcast/editorial-rules';
 import type { Logger } from '@footcast/logger';
 import type { ScoreEventJobData } from '@footcast/queue';
-import { EventStatus, countsAsIndependentSource } from '@footcast/shared';
+import {
+  EventStatus,
+  countsAsIndependentSource,
+  normalizeScope,
+} from '@footcast/shared';
 import { applyEditorialAutomationAfterScore } from './apply-editorial-automation.js';
 
 function namesFromCard(card: Record<string, unknown>, key: 'clubs' | 'people'): string[] {
@@ -102,6 +106,13 @@ export async function processScoreEventJob(
   const openConflicts =
     (event as unknown as { conflicts?: unknown[] }).conflicts?.length ?? 0;
 
+  const meta = (event.getDataValue('metadata') ?? {}) as Record<string, unknown>;
+  const isDuplicateHeavy =
+    meta.nearDuplicate === true ||
+    meta.exactDuplicate === true ||
+    typeof meta.duplicateOfEventId === 'string' ||
+    String(event.getDataValue('status') ?? '') === EventStatus.MERGED;
+
   const { result: scored } = buildEventScoreInput({
     title: event.getDataValue('title'),
     summary: event.getDataValue('summary'),
@@ -116,6 +127,8 @@ export async function processScoreEventJob(
     people,
     hasOpenConflict: openConflicts > 0,
     hasDirectQuote,
+    isDuplicateHeavy,
+    articleLinkCount: links.length,
     sources,
   });
 
@@ -154,6 +167,8 @@ export async function processScoreEventJob(
     ? Number(activeOverride.getDataValue('overriddenFinalScore'))
     : scored.finalScore;
 
+  const canonicalScope = normalizeScope(event.getDataValue('scope'));
+
   await event.update({
     // legacy field = effective final for sorting/compat
     importanceScore: Math.round(effectiveFinal),
@@ -162,6 +177,7 @@ export async function processScoreEventJob(
     podcastValueScore: scored.podcastValueScore,
     effectiveFinalScore: effectiveFinal,
     recommendation: scored.recommendation,
+    ...(canonicalScope ? { scope: canonicalScope } : {}),
     status:
       event.getDataValue('status') === EventStatus.CONFLICTED
         ? EventStatus.CONFLICTED
@@ -169,7 +185,7 @@ export async function processScoreEventJob(
           ? EventStatus.NEEDS_REVIEW
           : event.getDataValue('status'),
     metadata: {
-      ...(event.getDataValue('metadata') ?? {}),
+      ...meta,
       lastScore: {
         finalScore: scored.finalScore,
         credibilityScore: scored.credibilityScore,
@@ -179,6 +195,7 @@ export async function processScoreEventJob(
         ruleHits: scored.ruleHits,
         reason: data.reason ?? 'manual',
         policyVersion: scored.policyVersion,
+        isDuplicateHeavy,
       },
     },
   });

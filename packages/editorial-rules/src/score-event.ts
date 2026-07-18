@@ -1,15 +1,17 @@
 import {
+  CoverageScope,
   MVP_SCORING_POLICY,
+  OfficialStatus,
   clampScore,
   combineSourceCredibility,
   independentSourceScore,
+  normalizeScope,
   officialStatusScore,
   recommendationFromScores,
   roundScore,
   type EditorialRecommendation,
   type ScoreAdjustment,
 } from '@footcast/shared';
-import { OfficialStatus } from '@footcast/shared';
 import { listEnabledRules } from './default-rules.js';
 
 export interface EventScoreInput {
@@ -169,12 +171,20 @@ export function scoreNewsEvent(input: EventScoreInput): EventScoreResult {
   const teamOrPlayerImportance = clampScore(
     40 + (bigIran ? 35 : 0) + (national ? 30 : 0) + Math.min(20, clubs.length * 8),
   );
+  const scope = normalizeScope(input.scope);
   const audienceRelevance = clampScore(
-    (input.scope === 'iran' ? 85 : input.scope === 'europe' ? 70 : 45) +
-      (bigIran || national ? 15 : 0),
+    (scope === CoverageScope.IRAN
+      ? 85
+      : scope === CoverageScope.EUROPE
+        ? 70
+        : scope === CoverageScope.BOTH
+          ? 80
+          : 45) + (bigIran || national ? 15 : 0),
   );
   const nationalOrInternationalImpact = clampScore(
-    (input.scope === 'iran' ? 60 : 40) + (national ? 30 : 0) + (input.scope === 'europe' ? 20 : 0),
+    (scope === CoverageScope.IRAN ? 60 : 40) +
+      (national ? 30 : 0) +
+      (scope === CoverageScope.EUROPE || scope === CoverageScope.BOTH ? 20 : 0),
   );
   const novelty = clampScore(
     (input.isNewDevelopment === false ? 35 : 70) + (multiSource ? 10 : 0),

@@ -29,6 +29,7 @@ import {
   WaveObservationType,
   categoryTimeWindowHours,
   countsAsIndependentSource,
+  normalizeScope,
   type EventSignature,
 } from '@footcast/shared';
 import {
@@ -231,7 +232,7 @@ export async function processClusterEventJob(
     extraction.getDataValue('headlineFa') ?? article.getDataValue('title') ?? 'Untitled';
   const summary = extraction.getDataValue('summaryFa') ?? '';
   const category = extraction.getDataValue('category');
-  const scope = extraction.getDataValue('scope');
+  const scope = normalizeScope(extraction.getDataValue('scope'));
   const aliasMap = await loadAliasMap(db);
   const clubs = resolveEntityNames(namesFromCard(card, 'clubs'), aliasMap);
   const people = resolveEntityNames(namesFromCard(card, 'people'), aliasMap);

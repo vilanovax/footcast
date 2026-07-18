@@ -181,6 +181,8 @@ export enum CoverageBucketStatus {
 export enum CoverageRecommendationType {
   COVERAGE_GAP = 'COVERAGE_GAP',
   NO_AVAILABLE_NEWS = 'NO_AVAILABLE_NEWS',
+  /** Discovered news below shortlist gates — best effort picks for the editor */
+  BEST_AVAILABLE = 'BEST_AVAILABLE',
   OVER_COVERED = 'OVER_COVERED',
   TEAM_REDUNDANCY = 'TEAM_REDUNDANCY',
   CATEGORY_REDUNDANCY = 'CATEGORY_REDUNDANCY',
