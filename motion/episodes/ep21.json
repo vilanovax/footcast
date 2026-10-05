@@ -1,0 +1,185 @@
+{
+  "brand": "فوتبالیکا",
+  "episode": 21,
+  "date": "یکشنبه ۱۲ مهر ۱۴۰۵",
+  "handle": "@footballica",
+  "scenes": [
+    {
+      "type": "intro",
+      "duration": 3.6,
+      "kicker": "خلاصه خبرهای امروز",
+      "topics": [
+        "انگلیس ۷ـ۰ کرواسی",
+        "ایران بدون بازی سوم",
+        "بازی‌های امشب"
+      ]
+    },
+    {
+      "type": "stat",
+      "duration": 4.2,
+      "label": "عدد امروز",
+      "value": 7,
+      "caption": "گل انگلیس در یک شب",
+      "sub": "مقابل کرواسی در ریکا · نیمه اول ۴ـ۰"
+    },
+    {
+      "type": "match",
+      "duration": 4.6,
+      "label": "داستان روز",
+      "competition": "لیگ ملت‌ها",
+      "home": {
+        "name": "انگلیس",
+        "team": "england",
+        "score": 7
+      },
+      "away": {
+        "name": "کرواسی",
+        "team": "croatia",
+        "score": 0
+      },
+      "scorers": [
+        "هری کین ×۲",
+        "ساکا ×۲",
+        "بلینگام",
+        "گوردون",
+        "راجرز"
+      ]
+    },
+    {
+      "type": "results",
+      "duration": 4.4,
+      "label": "نتایج دیشب",
+      "rows": [
+        {
+          "home": "اسپانیا",
+          "homeTeam": "spain",
+          "away": "چک",
+          "awayTeam": "czech",
+          "score": [
+            3,
+            1
+          ],
+          "note": "یامال، رودری، مرینو"
+        },
+        {
+          "home": "اسکاتلند",
+          "homeTeam": "scotland",
+          "away": "مقدونیه ش.",
+          "awayTeam": "macedonia",
+          "score": [
+            2,
+            0
+          ],
+          "note": "لیگ ملت‌ها"
+        },
+        {
+          "home": "آرژانتین",
+          "homeTeam": "argentina",
+          "away": "بورکینافاسو",
+          "awayTeam": "burkina",
+          "score": [
+            7,
+            0
+          ],
+          "note": "دوستانه"
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "duration": 4.2,
+      "label": "جدول گروه ۳ · لیگ A",
+      "rows": [
+        {
+          "name": "اسپانیا",
+          "team": "spain",
+          "pts": 9
+        },
+        {
+          "name": "انگلیس",
+          "team": "england",
+          "pts": 6
+        },
+        {
+          "name": "کرواسی",
+          "team": "croatia",
+          "pts": 3
+        },
+        {
+          "name": "چک",
+          "team": "czech",
+          "pts": 0
+        }
+      ]
+    },
+    {
+      "type": "cards",
+      "duration": 5.6,
+      "label": "ایران امروز",
+      "team": "iran",
+      "cards": [
+        {
+          "icon": "x",
+          "title": "فیفادی بدون بازی سوم",
+          "sub": "دو باخت مقابل ازبکستان و روسیه",
+          "tone": "bad"
+        },
+        {
+          "icon": "play",
+          "title": "لیگ برتر از پنجشنبه",
+          "sub": "تراکتور – استقلال در تبریز",
+          "tone": "good"
+        },
+        {
+          "icon": "plus",
+          "title": "سهمیه آسیا: ۳ + ۱",
+          "sub": "فصل ۲۰۲۷–۲۸ · به گفته مهدی تاج",
+          "tone": "info"
+        }
+      ]
+    },
+    {
+      "type": "fixtures",
+      "duration": 4.6,
+      "label": "بازی‌های پیش رو",
+      "groups": [
+        {
+          "when": "امشب · ۲۲:۱۵",
+          "matches": [
+            {
+              "home": "پرتغال",
+              "homeTeam": "portugal",
+              "away": "نروژ",
+              "awayTeam": "norway"
+            },
+            {
+              "home": "یونان",
+              "homeTeam": "greece",
+              "away": "آلمان",
+              "awayTeam": "germany"
+            }
+          ]
+        },
+        {
+          "when": "فردا · ۲۲:۱۵",
+          "matches": [
+            {
+              "home": "فرانسه",
+              "homeTeam": "france",
+              "away": "بلژیک",
+              "awayTeam": "belgium"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "outro",
+      "duration": 4.0,
+      "line1": "هر روز ساعت ۵ عصر",
+      "line2": "خلاصه فوتبال ۲۴ ساعت اخیر",
+      "cta": "فالو کن و به رفیقت بفرست",
+      "signoff": "تا فردا، فوتبالی بمونید"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "name": "footballica-motion",
+  "private": true,
+  "description": "Instagram motion post renderer for Footballica episodes",
+  "scripts": {
+    "render": "node render.cjs"
+  },
+  "dependencies": {
+    "playwright": "^1.56.0"
+  }
+}
