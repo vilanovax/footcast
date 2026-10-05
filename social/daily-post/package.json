@@ -1,0 +1,7 @@
+{
+  "name": "footcast-daily-post",
+  "private": true,
+  "type": "module",
+  "scripts": { "render": "node render.mjs" },
+  "devDependencies": { "playwright": "^1.56.1" }
+}

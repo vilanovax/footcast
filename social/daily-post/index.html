@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>Footballica daily post</title>
+<meta name="viewport" content="width=1080">
+<style>
+@font-face{font-family:Vazirmatn;font-weight:500;src:url(vendor/Vazirmatn-Medium.woff2) format("woff2")}
+@font-face{font-family:Vazirmatn;font-weight:700;src:url(vendor/Vazirmatn-Bold.woff2) format("woff2")}
+@font-face{font-family:Vazirmatn;font-weight:800;src:url(vendor/Vazirmatn-ExtraBold.woff2) format("woff2")}
+@font-face{font-family:Vazirmatn;font-weight:900;src:url(vendor/Vazirmatn-Black.woff2) format("woff2")}
+:root{--bg:#06110d;--ink:#f5f2e8;--dim:rgba(245,242,232,.58);--lime:#c8ff3e;--red:#ff5a3c;--card:rgba(255,255,255,.07);--line:rgba(255,255,255,.15);--glow:#c8ff3e}
+html,body{margin:0;background:#000;overflow:hidden}
+#stage{position:absolute;left:0;top:0;width:1080px;height:1920px;overflow:hidden;background:var(--bg);color:var(--ink);font-family:Vazirmatn,sans-serif;direction:rtl;transform-origin:0 0}
+#stage *{box-sizing:border-box}
+#bg,#bg>*{position:absolute}
+#bg{inset:0;z-index:0}
+#glow{left:-300px;top:-100px;width:1680px;height:1680px;background:radial-gradient(circle at 50% 50%,color-mix(in srgb,var(--glow) 20%,transparent) 0,transparent 55%)}
+#pitch{inset:0;width:1080px;height:1920px;fill:none;stroke:rgba(255,255,255,.06);stroke-width:5;transform-origin:540px 960px}
+#hdr{position:absolute;top:310px;left:80px;right:80px;z-index:7;display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:38px;color:var(--ink)}
+#hdr .brand{display:flex;align-items:center;gap:18px;font-weight:900;font-size:46px}
+#hdr .ball{width:62px;height:62px}
+#hdr .ep{display:flex;align-items:center;gap:16px;opacity:.8}
+#hdr .ep i{width:8px;height:8px;border-radius:50%;background:currentColor;opacity:.6}
+#scenes,#ctaLayer{position:absolute;left:80px;right:80px;top:410px;height:1050px}
+#scenes{z-index:2}
+#ctaLayer{z-index:6}
+.scene{position:absolute;inset:0;display:flex;flex-direction:column;opacity:0;visibility:hidden;transform-origin:50% 50%}
+.tag{align-self:flex-start;display:flex;align-items:center;gap:16px;padding:12px 34px 12px 30px;border-radius:60px;background:var(--lime);color:var(--bg);font-weight:900;font-size:46px;line-height:1.3}
+.tag i{width:16px;height:16px;border-radius:50%;background:var(--bg)}
+.row{position:relative;border-radius:52px;background:var(--card);border:2px solid var(--line);padding:34px 36px 38px;display:flex;flex-direction:column;align-items:center;margin-top:36px}
+.row .main{display:flex;align-items:center;justify-content:space-between;width:100%}
+.team{display:flex;flex-direction:column;align-items:center;gap:20px;width:250px;font-weight:900;font-size:64px;line-height:1.2}
+.flag{width:130px;height:16px;border-radius:8px}
+.score{display:flex;align-items:center;gap:22px;font-weight:900;font-size:210px;line-height:1.05;direction:rtl}
+.row.big .score{font-size:290px}
+.dg.win{color:var(--lime)}
+.dg.lose{color:var(--dim)}
+.dg.ph{visibility:hidden}
+.dash{font-size:110px;color:var(--dim);font-weight:700}
+.note{margin-top:14px;padding:12px 34px;border-radius:50px;background:rgba(200,255,62,.14);color:var(--lime);font-size:42px;font-weight:700}
+.hl{font-weight:900;font-size:128px;line-height:1.18;margin-top:40px}
+.hl span{display:block}
+.hl .acc{color:var(--lime)}
+.slots{display:flex;gap:25px;margin-top:50px}
+.slot{width:290px;height:540px;border-radius:44px;background:var(--card);border:2px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;text-align:center}
+.slot .lb{font-size:38px;color:var(--dim);font-weight:500}
+.slot .nm{font-size:60px;font-weight:900;line-height:1.1}
+.slot .x{position:relative;width:110px;height:110px;border-radius:50%;background:rgba(255,90,60,.18)}
+.slot .x:before,.slot .x:after{content:"";position:absolute;left:50%;top:50%;width:58px;height:10px;border-radius:5px;background:var(--red);transform:translate(-50%,-50%) rotate(45deg)}
+.slot .x:after{transform:translate(-50%,-50%) rotate(-45deg)}
+.slot .bd{padding:6px 30px;border-radius:40px;background:var(--red);color:#fff;font-weight:900;font-size:40px}
+.slot.none{background:transparent;border:3px dashed rgba(245,242,232,.35)}
+.slot.none .nm{color:var(--dim);font-size:56px}
+.slot.none .q{font-size:120px;font-weight:900;color:var(--dim);line-height:1}
+.card{border-radius:52px;background:var(--card);border:2px solid var(--line);margin-top:36px;display:flex;flex-direction:column;align-items:center;text-align:center}
+.card.quota{padding:34px 30px 38px;gap:6px}
+.card .cap{font-size:44px;font-weight:700;color:var(--dim)}
+.big31{display:flex;align-items:center;gap:30px;font-weight:900;font-size:300px;line-height:1.05;color:var(--lime)}
+.big31 .pl{font-size:170px;color:var(--ink)}
+.card .ln{font-size:46px;font-weight:700;line-height:1.5}
+.card .src{margin-top:10px;font-size:36px;color:var(--dim);font-weight:500}
+.card.fx{padding:30px 30px 34px;gap:14px}
+.pill{padding:8px 30px;border-radius:40px;background:var(--lime);color:var(--bg);font-weight:900;font-size:40px}
+.vs{display:flex;align-items:center;gap:26px;font-weight:900;font-size:76px;line-height:1.2}
+.vs .d{font-size:56px;color:var(--dim);font-weight:700}
+.sub{font-size:40px;color:var(--dim);font-weight:500}
+.clock{display:flex;flex-direction:column;align-items:center;margin-top:20px;line-height:1}
+.clock .t{font-weight:900;font-size:200px;color:var(--lime);direction:ltr;line-height:1.05}
+.clock .z{font-size:46px;font-weight:700;color:var(--dim)}
+.mcard{padding:20px 30px 22px;margin-top:22px;gap:4px}
+.mcard.tm{background:transparent;border-style:dashed}
+.mcard .lab{font-size:40px;color:var(--lime);font-weight:800}
+.cta{align-items:center;text-align:center;color:var(--bg);justify-content:flex-start;padding-top:30px}
+.cta .ballbig{width:210px;height:210px}
+.cta .when{font-weight:900;font-size:150px;line-height:1.14;margin-top:30px}
+.cta .when span{display:block}
+.cta .what{font-weight:700;font-size:56px;line-height:1.5;margin-top:36px;max-width:880px}
+.cta .btn{margin-top:54px;padding:22px 64px;border-radius:80px;background:var(--bg);color:var(--lime);font-weight:900;font-size:62px}
+.cta .foot{margin-top:34px;font-size:44px;font-weight:700;opacity:.8}
+#ring{position:absolute;left:0;top:0;width:100%;height:100%}
+.ring{position:absolute;left:50%;top:390px;width:620px;height:620px;margin:-310px 0 0 -310px;border-radius:50%;border:6px solid var(--lime);opacity:0}
+.hookline{position:absolute;left:0;right:0;top:760px;text-align:center;font-weight:900;font-size:112px;line-height:1.2}
+.hookline span{display:block}
+.hookline .acc{color:var(--lime)}
+#heroLayer{position:absolute;inset:0;z-index:3;transform-origin:540px 935px;pointer-events:none}
+#hero{position:absolute;font-weight:900;color:var(--lime);line-height:1.05;white-space:nowrap}
+#rail{position:absolute;left:0;right:0;top:1500px;z-index:4;display:flex;justify-content:center;gap:16px}
+#rail i{width:16px;height:16px;border-radius:8px;background:rgba(245,242,232,.28)}
+#rail i.on{width:68px;background:var(--lime)}
+#wipe{position:absolute;left:0;top:0;width:1300px;height:1920px;background:var(--lime);z-index:5;clip-path:polygon(220px 0,100% 0,100% 100%,0 100%);transform:translateX(1080px)}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="bg">
+    <div id="glow"></div>
+    <svg id="pitch" viewBox="0 0 1080 1920"><circle cx="540" cy="960" r="420"/><line x1="-40" y1="960" x2="1120" y2="960"/><circle cx="540" cy="960" r="14" style="fill:rgba(255,255,255,.06)"/><rect x="230" y="-60" width="620" height="400"/><rect x="230" y="1580" width="620" height="400"/></svg>
+  </div>
+  <header id="hdr">
+    <div class="brand"><svg class="ball" viewBox="0 0 64 64"><circle cx="32" cy="32" r="29" fill="none" stroke="currentColor" stroke-width="4"/><polygon points="32,18 44,27 40,41 24,41 20,27" fill="currentColor"/><path d="M32 18V4M44 27l14-5M40 41l9 12M24 41l-9 12M20 27L6 22" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round"/></svg><span id="brandName"></span></div>
+    <div class="ep"><span id="epNum"></span><i></i><span id="epDate"></span></div>
+  </header>
+  <main id="scenes"></main>
+  <div id="heroLayer"><div id="hero"></div></div>
+  <nav id="rail"></nav>
+  <div id="wipe"></div>
+  <div id="ctaLayer"></div>
+</div>
+<script src="vendor/gsap.min.js"></script>
+<script src="episode.js"></script>
+<script>
+(async () => {
+const E = window.EPISODE;
+const RENDER = location.search.includes("render");
+const $ = (s) => document.querySelector(s);
+const h = (tag, cls, html) => { const el = document.createElement(tag); if (cls) el.className = cls; if (html != null) el.innerHTML = html; return el; };
+const toEn = (s) => +s.replace(/[۰-۹]/g, (d) => "۰۱۲۳۴۵۶۷۸۹".indexOf(d));
+
+await Promise.all([500, 700, 800, 900].map((w) => document.fonts.load(`${w} 40px Vazirmatn`, "۰۱۲۳ فوتبالیکا")));
+
+$("#brandName").textContent = E.brand;
+$("#epNum").textContent = "قسمت " + E.episode;
+$("#epDate").textContent = E.date;
+
+const scenesEl = $("#scenes");
+const tag = (t) => h("div", "tag", `<i></i>${t}`);
+
+// ---- hook
+const hook = h("section", "scene");
+hook.append(tag(E.hook.tag));
+const rings = [0, 1, 2].map(() => { const r = h("div", "ring"); hook.append(r); return r; });
+const hookLine = h("div", "hookline", `<span>${E.hook.lines[0]}</span><span class="acc">${E.hook.lines[1]}</span>`);
+hook.append(hookLine);
+
+// ---- scores
+const scores = h("section", "scene");
+scores.append(tag(E.scores.tag));
+const rowEls = E.scores.rows.map((r, i) => {
+  const row = h("div", "row" + (i === 0 ? " big" : ""));
+  const main = h("div", "main");
+  const team = (name, flag) => { const t = h("div", "team", `<span>${name}</span>`); const f = h("span", "flag"); f.style.background = flag; t.append(f); return t; };
+  const hw = toEn(r.h) > toEn(r.a);
+  const score = h("div", "score");
+  const dh = h("span", "dg " + (hw ? "win" : "lose"), r.h);
+  const da = h("span", "dg " + (hw ? "lose" : "win"), r.a);
+  if (i === 0) dh.classList.add("ph");
+  score.append(dh, h("span", "dash", "–"), da);
+  main.append(team(r.home, r.flags[0]), score, team(r.away, r.flags[1]));
+  row.append(main, h("div", "note", r.note));
+  scores.append(row);
+  return { row, main, score, dh, da, note: row.querySelector(".note"), teams: [...row.querySelectorAll(".team")] };
+});
+
+// ---- iran
+const iran = h("section", "scene");
+iran.append(tag(E.iran.tag));
+const hl = h("div", "hl", `<span>${E.iran.title[0]}</span><span class="acc">${E.iran.title[1]}</span>`);
+const slotsEl = h("div", "slots");
+const slotEls = E.iran.slots.map((s) => {
+  const el = h("div", "slot " + s.kind);
+  if (s.kind === "loss") el.innerHTML = `<span class="lb">${s.label}</span><span class="nm">${s.name}</span><span class="x"></span><span class="bd">${s.badge}</span>`;
+  else el.innerHTML = `<span class="lb">${s.label}</span><span class="q">؟</span><span class="nm">${s.name}</span>`;
+  slotsEl.append(el);
+  return el;
+});
+iran.append(hl, slotsEl);
+
+// ---- club
+const club = h("section", "scene");
+club.append(tag(E.club.tag));
+const q = E.club.quota;
+const quota = h("div", "card quota");
+quota.innerHTML = `<div class="cap">${q.caption}</div><div class="big31"><span>${q.big[0]}</span><span class="pl">+</span><span>${q.big[1]}</span></div><div class="ln">${q.lines[0]}<br>${q.lines[1]}</div><div class="src">${q.source}</div>`;
+const f = E.club.fixture;
+const fx = h("div", "card fx");
+fx.innerHTML = `<div class="pill">${f.day}</div><div class="vs"><span>${f.a}</span><span class="d">–</span><span>${f.b}</span></div><div class="sub">${f.sub}</div>`;
+club.append(quota, fx);
+
+// ---- tonight
+const T = E.tonight;
+const tonight = h("section", "scene");
+tonight.append(tag(T.tag));
+const clock = h("div", "clock", `<div class="t">${T.time}</div><div class="z">${T.zone}</div>`);
+tonight.append(clock);
+const mEls = T.matches.map((m) => {
+  const c = h("div", "card mcard", `<div class="vs"><span>${m.a}</span><span class="d">–</span><span>${m.b}</span></div>` + (m.sub ? `<div class="sub">${m.sub}</div>` : ""));
+  tonight.append(c);
+  return c;
+});
+const tm = h("div", "card mcard tm", `<div class="lab">${T.tomorrow.label}</div><div class="vs"><span>${T.tomorrow.a}</span><span class="d">–</span><span>${T.tomorrow.b}</span></div><div class="sub">${T.tomorrow.sub}</div>`);
+tonight.append(tm);
+
+[hook, scores, iran, club, tonight].forEach((s) => scenesEl.append(s));
+
+// ---- cta
+const C = E.cta;
+const cta = h("section", "scene cta");
+cta.innerHTML = `<svg class="ballbig" viewBox="0 0 64 64"><circle cx="32" cy="32" r="29" fill="none" stroke="currentColor" stroke-width="4"/><polygon points="32,18 44,27 40,41 24,41 20,27" fill="currentColor"/><path d="M32 18V4M44 27l14-5M40 41l9 12M24 41l-9 12M20 27L6 22" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round"/></svg><div class="when"><span>${C.when[0]}</span><span>${C.when[1]}</span></div><div class="what">${C.what}</div><div class="btn">${C.button}</div><div class="foot">${C.foot}</div>`;
+$("#ctaLayer").append(cta);
+
+// ---- rail
+const railEl = $("#rail");
+const dots = [0, 1, 2, 3, 4].map((i) => { const d = h("i", i === 0 ? "on" : ""); railEl.append(d); return d; });
+
+// ---- hero 7 measurements: park it exactly on the scoreboard digit
+gsap.set(scores, { autoAlpha: 1 });
+const ph = rowEls[0].dh.getBoundingClientRect();
+const stageBox = $("#stage").getBoundingClientRect();
+const cx = ph.left - stageBox.left + ph.width / 2, cy = ph.top - stageBox.top + ph.height / 2;
+gsap.set(scores, { autoAlpha: 0 });
+const hero = $("#hero");
+hero.textContent = E.hook.value;
+hero.style.fontSize = getComputedStyle(rowEls[0].dh).fontSize;
+hero.style.left = cx + "px"; hero.style.top = cy + "px";
+const HX = 540, HY = 870, HS = 2.55;
+gsap.set(hero, { xPercent: -50, yPercent: -50, x: HX - cx, y: HY - cy, scale: HS, transformOrigin: "50% 50%" });
+gsap.set(hook, { autoAlpha: 1 });
+
+// ---- timeline
+const D = 28.6;
+const tl = gsap.timeline({ paused: true, defaults: { ease: "power3.out" } });
+const P = { hook: 0, scores: 3.0, iran: 9.8, club: 15.4, tonight: 20.8, cta: 25.4 };
+const show = (el, t) => tl.to(el, { autoAlpha: 1, duration: 0.001, immediateRender: false }, t);
+const hide = (el, t) => tl.to(el, { autoAlpha: 0, duration: 0.001, immediateRender: false }, t);
+const IN = (els, at, o = {}) => tl.fromTo(els, { y: o.y ?? 70, autoAlpha: 0, scale: o.scale ?? 1 }, { y: 0, autoAlpha: 1, scale: 1, duration: o.d ?? 0.6, stagger: o.s ?? 0, ease: o.ease ?? "power3.out" }, at);
+const push = (el, at, len, to = 1.035) => tl.fromTo(el, { scale: 1 }, { scale: to, duration: len, ease: "none", immediateRender: false }, at);
+
+// ambient
+tl.fromTo("#pitch", { rotation: -5 }, { rotation: 7, duration: D, ease: "none" }, 0);
+tl.fromTo("#glow", { x: 120, y: -80 }, { x: -160, y: 200, duration: D, ease: "none" }, 0);
+
+// 1 hook: finished at frame 0, then alive
+rings.forEach((r, i) => tl.fromTo(r, { scale: 0.9 + i * 0.15, opacity: 0.38 - i * 0.1 }, { scale: 2.5, opacity: 0, duration: 1.9, ease: "power1.out" }, i * 0.75));
+tl.fromTo(hero, { scale: HS }, { scale: HS * 1.06, duration: P.scores, ease: "none" }, 0);
+tl.fromTo(hookLine, { scale: 1 }, { scale: 1.03, duration: P.scores, ease: "none" }, 0);
+
+// hook -> scores: the 7 is the persistent actor
+tl.to([hookLine, hook.querySelector(".tag")], { y: -50, autoAlpha: 0, duration: 0.4, ease: "power2.in", immediateRender: false }, P.scores);
+tl.to(rings, { autoAlpha: 0, duration: 0.2, immediateRender: false }, P.scores);
+tl.fromTo(hero, { x: HX - cx, y: HY - cy, scale: HS * 1.06 }, { x: 0, y: 0, scale: 1, duration: 1.15, ease: "power4.inOut", immediateRender: false }, P.scores);
+hide(hook, P.scores + 0.45);
+show(scores, P.scores);
+tl.fromTo(scores.querySelector(".tag"), { x: 60, autoAlpha: 0 }, { x: 0, autoAlpha: 1, duration: 0.5 }, P.scores + 0.5);
+const r1 = rowEls[0], r2 = rowEls[1];
+tl.fromTo(r1.row, { y: 60, autoAlpha: 0, scale: 0.96 }, { y: 0, autoAlpha: 1, scale: 1, duration: 0.7 }, P.scores + 0.55);
+tl.fromTo([r1.da, ...r1.teams, r1.score.querySelector(".dash")], { autoAlpha: 0, y: 40 }, { autoAlpha: 1, y: 0, duration: 0.55, stagger: 0.07 }, P.scores + 1.05);
+IN(r1.note, 4.7, { y: 30, d: 0.5 });
+IN(r2.row, 5.5, { y: 90, d: 0.7 });
+tl.fromTo([...r2.teams, r2.score], { autoAlpha: 0, y: 40 }, { autoAlpha: 1, y: 0, duration: 0.55, stagger: 0.08 }, 5.75);
+IN(r2.note, 6.7, { y: 30, d: 0.5 });
+push(scores, P.scores, P.iran - P.scores - 0.4);
+tl.fromTo("#heroLayer", { scale: 1 }, { scale: 1.035, duration: P.iran - P.scores - 0.4, ease: "none", immediateRender: false }, P.scores);
+hide(hero, P.iran);
+
+// wipe + glow + rail helpers
+const W = $("#wipe");
+const wipe = (b, stay) => {
+  tl.fromTo(W, { x: 1080 }, { x: -220, duration: 0.42, ease: "power2.in", immediateRender: false }, b - 0.42);
+  if (!stay) tl.to(W, { x: -1300, duration: 0.5, ease: "power2.out", immediateRender: false }, b);
+};
+const glow = (col, at) => tl.to("#glow", { "--glow": col, duration: 0.6, ease: "none", immediateRender: false }, at);
+const rail = (i, at) => dots.forEach((d, k) => tl.to(d, { width: k === i ? 68 : 16, backgroundColor: k === i ? "#c8ff3e" : "rgba(245,242,232,0.28)", duration: 0.35, immediateRender: false }, at));
+rail(1, P.scores + 0.4);
+
+// 2 iran
+wipe(P.iran); hide(scores, P.iran); show(iran, P.iran); rail(2, P.iran); glow("#ff5a3c", P.iran - 0.3);
+tl.fromTo(iran.querySelector(".tag"), { x: 60, autoAlpha: 0 }, { x: 0, autoAlpha: 1, duration: 0.5 }, P.iran + 0.2);
+tl.fromTo(hl.children, { y: 90, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.7, stagger: 0.14 }, P.iran + 0.3);
+tl.fromTo(slotEls, { y: 120, autoAlpha: 0, scale: 0.94 }, { y: 0, autoAlpha: 1, scale: 1, duration: 0.7, stagger: 0.28 }, P.iran + 0.95);
+tl.fromTo(slotEls[0].querySelector(".x"), { scale: 0 }, { scale: 1, duration: 0.5, ease: "back.out(2.5)" }, P.iran + 1.35);
+tl.fromTo(slotEls[1].querySelector(".x"), { scale: 0 }, { scale: 1, duration: 0.5, ease: "back.out(2.5)" }, P.iran + 1.65);
+tl.fromTo(slotEls[2].querySelector(".q"), { scale: 0.4, autoAlpha: 0 }, { scale: 1, autoAlpha: 1, duration: 0.6, ease: "back.out(2)" }, P.iran + 2.1);
+push(iran, P.iran, P.club - P.iran - 0.4);
+
+// 3 club
+wipe(P.club); hide(iran, P.club); show(club, P.club); rail(3, P.club); glow("#c8ff3e", P.club - 0.3);
+tl.fromTo(club.querySelector(".tag"), { x: 60, autoAlpha: 0 }, { x: 0, autoAlpha: 1, duration: 0.5 }, P.club + 0.2);
+IN(quota, P.club + 0.35, { y: 100, d: 0.7 });
+tl.fromTo(quota.querySelector(".big31").children, { scale: 0.6, autoAlpha: 0 }, { scale: 1, autoAlpha: 1, duration: 0.6, stagger: 0.12, ease: "back.out(2)" }, P.club + 0.7);
+tl.fromTo([quota.querySelector(".ln"), quota.querySelector(".src")], { y: 30, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.55, stagger: 0.12 }, P.club + 1.3);
+IN(fx, P.club + 2.3, { y: 100, d: 0.7 });
+push(club, P.club, P.tonight - P.club - 0.4);
+
+// 4 tonight
+wipe(P.tonight); hide(club, P.tonight); show(tonight, P.tonight); rail(4, P.tonight); glow("#3ec8ff", P.tonight - 0.3);
+tl.fromTo(tonight.querySelector(".tag"), { x: 60, autoAlpha: 0 }, { x: 0, autoAlpha: 1, duration: 0.5 }, P.tonight + 0.2);
+tl.fromTo(clock.children, { y: 80, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.7, stagger: 0.12 }, P.tonight + 0.35);
+IN(mEls, P.tonight + 1.2, { y: 90, d: 0.65, s: 0.2 });
+IN(tm, P.tonight + 2.5, { y: 90, d: 0.65 });
+push(tonight, P.tonight, P.cta - P.tonight - 0.4);
+
+// 5 cta (lime takeover stays)
+wipe(P.cta, true); hide(tonight, P.cta); show(cta, P.cta);
+tl.to("#rail", { autoAlpha: 0, duration: 0.3, immediateRender: false }, P.cta - 0.3);
+tl.to("#hdr", { color: "#06110d", duration: 0.3, ease: "none", immediateRender: false }, P.cta - 0.3);
+tl.fromTo(cta.querySelector(".ballbig"), { scale: 0.3, rotation: -120, autoAlpha: 0 }, { scale: 1, rotation: 0, autoAlpha: 1, duration: 0.8, ease: "back.out(1.6)" }, P.cta + 0.15);
+tl.fromTo(cta.querySelector(".when").children, { y: 90, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.65, stagger: 0.13 }, P.cta + 0.4);
+tl.fromTo(cta.querySelector(".what"), { y: 40, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.6 }, P.cta + 0.95);
+tl.fromTo(cta.querySelector(".btn"), { scale: 0.7, autoAlpha: 0 }, { scale: 1, autoAlpha: 1, duration: 0.6, ease: "back.out(2)" }, P.cta + 1.3);
+tl.fromTo(cta.querySelector(".foot"), { y: 30, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.5 }, P.cta + 1.7);
+tl.fromTo(cta.querySelector(".ballbig"), { y: 0 }, { y: -14, duration: 1.4, ease: "sine.inOut", yoyo: true, repeat: 1, immediateRender: false }, P.cta + 1.0);
+tl.set({}, {}, D);
+
+window.__duration = D;
+window.__seek = (t) => { tl.time(Math.min(Math.max(t, 0), D), false); };
+window.__seek(0);
+
+if (!RENDER) {
+  const fit = () => { const s = Math.min(innerWidth / 1080, innerHeight / 1920); $("#stage").style.transform = `scale(${s})`; };
+  fit(); addEventListener("resize", fit);
+  const bar = h("div"); bar.style.cssText = "position:fixed;left:0;right:0;bottom:0;z-index:99;padding:8px";
+  const rng = h("input"); rng.type = "range"; rng.min = 0; rng.max = D; rng.step = 0.01; rng.value = 0; rng.style.width = "100%";
+  rng.oninput = () => window.__seek(+rng.value);
+  bar.append(rng); document.body.append(bar);
+  let playing = false, t0 = 0;
+  addEventListener("keydown", (e) => { if (e.code === "Space") { playing = !playing; t0 = performance.now() - +rng.value * 1000; if (playing) loop(); } });
+  const loop = () => { if (!playing) return; const t = (performance.now() - t0) / 1000 % D; rng.value = t; window.__seek(t); requestAnimationFrame(loop); };
+}
+window.__ready = true;
+})();
+</script>
+</body>
+</html>
